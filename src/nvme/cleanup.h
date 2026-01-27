@@ -2,10 +2,17 @@
 #ifndef __CLEANUP_H
 #define __CLEANUP_H
 
-#include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#ifdef WINDOWS_GCC
+#include <winsock2.h>
+#include <time.h>
+#include "windows/compat.h"
+#else
+#include <dirent.h>
 #include <unistd.h>
+#endif
 
 #define __cleanup__(fn) __attribute__((cleanup(fn)))
 
@@ -28,8 +35,10 @@ static inline void freep(void *p)
 static inline DEFINE_CLEANUP_FUNC(cleanup_file, FILE *, fclose)
 #define _cleanup_file_ __cleanup__(cleanup_file)
 
+/*
 static inline DEFINE_CLEANUP_FUNC(cleanup_dir, DIR *, closedir)
 #define _cleanup_dir_ __cleanup__(cleanup_dir)
+*/
 
 static inline void cleanup_fd(int *fd)
 {
