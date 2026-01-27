@@ -5,10 +5,11 @@
 #
 # Authors: Martin Belanger <Martin.Belanger@dell.com>
 #
+
 project(
     'libnvme', ['c'],
     meson_version: '>= 0.62.0',
-    version: '1.16.1',
+    version: '1.15',
     license: 'LGPL-2.1-or-later',
     default_options: [
         'c_std=gnu99',
@@ -19,6 +20,7 @@ project(
         'wrap_mode=nofallback'
     ]
 )
+
 
 vstr = meson.project_version().split('-rc')[0]
 vstr = vstr.split('.dev')[0]
@@ -46,20 +48,44 @@ sysconfdir = join_paths(prefixdir, get_option('sysconfdir'))
 conf = configuration_data()
 
 version_tag = get_option('version-tag')
+
+if host_machine.system() == 'windows'
+  # Code specific to Windows host
+  message('Building on a Windows host.')
+elif host_machine.system() == 'linux'
+  # Code specific to Linux host
+  message('Building on a Linux host.')
+else
+  # Code for other operating systems
+  message('Building on a different operating system: ' + host_machine.system())
+endif
+if host_machine.system() != 'linux'
+    message('Adding WINDOWS precompile.')
+    add_project_arguments('-DWINDOWS_GCC', language: ['c', 'cpp'])
+    add_project_arguments('-DNVME_LIB', language: ['c', 'cpp'])
+endif
+
 if version_tag != ''
     conf.set('GIT_VERSION', '"@0@"'.format(version_tag))
 else
-    r = run_command('scripts/meson-vcs-tag.sh',
-                    meson.current_source_dir(),
-                    meson.project_version(),
-                    check: true)
-    conf.set('GIT_VERSION', '"@0@"'.format(r.stdout().strip()))
+    if host_machine.system() == 'windows'
+        conf.set('GIT_VERSION', '"@0@"'.format(version_tag))
+    elif
+        r = run_command('scripts/meson-vcs-tag.sh',
+                        meson.current_source_dir(),
+                        meson.project_version(),
+                        check: true)
+        conf.set('GIT_VERSION', '"@0@"'.format(r.stdout().strip()))
+    endif
 endif
 conf.set('PROJECT_VERSION', '"@0@"'.format(meson.project_version()))
 
 conf.set('SYSCONFDIR', '"@0@"'.format(sysconfdir))
 
-if get_option('json-c').disabled()
+if host_machine.system() == 'windows'
+    # Force disable json-c on Windows - json.h is not available
+    json_c_dep = dependency('', required: false)
+elif get_option('json-c').disabled()
     json_c_dep = dependency('', required: false)
 else
     json_c_dep = dependency('json-c',
@@ -218,6 +244,7 @@ conf.set10(
 
 is_static = get_option('default_library') == 'static'
 have_netdb = false
+if host_machine.system() == 'linux'
 if not is_static
   have_netdb = cc.links(
       '''#include <sys/types.h>
@@ -230,6 +257,21 @@ if not is_static
       ''',
       name: 'netdb',
     )
+endif
+else
+if not is_static
+  have_netdb = cc.links(
+      '''#include "winsock2.h"
+         #include "windows.h"
+         #include "src/nvme/windows/types.h"
+         int main(int argc, char **argv) {
+             struct addrinfo hints, *result;
+             return getaddrinfo(argv[1], argv[2], &hints, &result);
+      }
+      ''',
+      name: 'netdb',
+    )
+endif
 endif
 
 conf.set(
@@ -252,7 +294,7 @@ else
   conf.set('fallthrough', 'do {} while (0) /* fallthrough */')
 endif
 
-if openssl_dep.found() and meson.can_run_host_binaries()
+if openssl_dep.found()
   if openssl_dep.type_name() != 'internal'
     # Check for a bug in the EVP_PKEY_CTX_add1_hkdf_info implementation
     res = cc.run(
@@ -281,6 +323,21 @@ configure_file(
 )
 
 ################################################################################
+if host_machine.system() == 'windows'
+message('Adding WINDOWS precompile.')
+add_project_arguments(
+    [
+        '-fomit-frame-pointer',
+        '-D_GNU_SOURCE',
+        '-DWINDOWS_GCC',
+    ],
+    language : 'c',
+)
+#add_project_arguments('-O0', language: 'c')
+#add_project_arguments('-g', language: 'c')
+
+incdir = include_directories(['.', 'ccan', 'src', 'src/nvme', 'src/nvme/windows'])
+else
 add_project_arguments(
     [
         '-fomit-frame-pointer',
@@ -288,19 +345,29 @@ add_project_arguments(
     ],
     language : 'c',
 )
-incdir = include_directories(['.', 'ccan', 'src'])
+incdir = include_directories(['.', 'ccan', 'src', 'src/nvme'])
+endif
+
+
 
 ################################################################################
 subdir('internal')
 subdir('ccan')
 subdir('src')
+#subdir('src/nvme')
 subdir('libnvme')
+
+if host_machine.system() == 'linux'
+
 if get_option('tests')
     subdir('test')
 endif
 if get_option('examples')
     subdir('examples')
 endif
+
+endif
+
 subdir('doc')
 
 ################################################################################
@@ -330,3 +397,4 @@ if meson.version().version_compare('>=0.53.0')
     }
     summary(conf_dict, section: 'Configuration')
 endif
+
