@@ -1,3 +1,15 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+/*
+ * Windows-specific NVMe implementation
+ *
+ * Copyright (c) 2026, James Huey <side1out@yahoo.com>
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ */
+
 #ifndef _SYS_SYSLOG_H
 #define _SYS_SYSLOG_H 1
 
