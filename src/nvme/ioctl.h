@@ -12,7 +12,11 @@
 
 #include <errno.h>
 #include <stddef.h>
+#ifdef WINDOWS_GCC
+#include "windows/ioctl.h"
+#else
 #include <sys/ioctl.h>
+#endif
 
 #include <nvme/types.h>
 #include <nvme/api-types.h>
@@ -68,6 +72,7 @@
  * @timeout_ms:	If non-zero, overrides system default timeout in milliseconds
  * @result:	Set on completion to the command's CQE DWORD 0 controller response
  */
+
 struct nvme_passthru_cmd {
 	__u8	opcode;
 	__u8	flags;
@@ -87,6 +92,9 @@ struct nvme_passthru_cmd {
 	__u32	cdw15;
 	__u32	timeout_ms;
 	__u32	result;
+	#ifdef WINDOWS_GCC
+	__u32   fw_len; // Windows needs more info sometimes for APIs (i.e STORAGE_HW_FIRMWARE_REQUEST_FLAG_LAST_SEGMENT)
+	#endif
 };
 
 /**
@@ -341,7 +349,7 @@ enum nvme_cmd_dword_fields {
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_submit_admin_passthru64(int fd, struct nvme_passthru_cmd64 *cmd,
+NVME_API int nvme_submit_admin_passthru64(int fd, struct nvme_passthru_cmd64 *cmd,
 				 __u64 *result);
 
 /**
@@ -391,7 +399,7 @@ int nvme_admin_passthru64(int fd, __u8 opcode, __u8 flags, __u16 rsvd,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_submit_admin_passthru(int fd, struct nvme_passthru_cmd *cmd,
+NVME_API int nvme_submit_admin_passthru(int fd, struct nvme_passthru_cmd *cmd,
 			       __u32 *result);
 
 /**
@@ -424,7 +432,7 @@ int nvme_submit_admin_passthru(int fd, struct nvme_passthru_cmd *cmd,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_admin_passthru(int fd, __u8 opcode, __u8 flags, __u16 rsvd,
+NVME_API int nvme_admin_passthru(int fd, __u8 opcode, __u8 flags, __u16 rsvd,
 		__u32 nsid, __u32 cdw2, __u32 cdw3, __u32 cdw10, __u32 cdw11,
 		__u32 cdw12, __u32 cdw13, __u32 cdw14, __u32 cdw15,
 		__u32 data_len, void *data, __u32 metadata_len, void *metadata,
@@ -474,7 +482,7 @@ int nvme_submit_io_passthru64(int fd, struct nvme_passthru_cmd64 *cmd,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_io_passthru64(int fd, __u8 opcode, __u8 flags, __u16 rsvd,
+NVME_API int nvme_io_passthru64(int fd, __u8 opcode, __u8 flags, __u16 rsvd,
 		__u32 nsid, __u32 cdw2, __u32 cdw3, __u32 cdw10, __u32 cdw11,
 		__u32 cdw12, __u32 cdw13, __u32 cdw14, __u32 cdw15,
 		__u32 data_len, void *data, __u32 metadata_len, void *metadata,
@@ -492,7 +500,7 @@ int nvme_io_passthru64(int fd, __u8 opcode, __u8 flags, __u16 rsvd,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_submit_io_passthru(int fd, struct nvme_passthru_cmd *cmd,
+NVME_API int nvme_submit_io_passthru(int fd, struct nvme_passthru_cmd *cmd,
 			    __u32 *result);
 
 /**
@@ -525,7 +533,7 @@ int nvme_submit_io_passthru(int fd, struct nvme_passthru_cmd *cmd,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_io_passthru(int fd, __u8 opcode, __u8 flags, __u16 rsvd,
+NVME_API int nvme_io_passthru(int fd, __u8 opcode, __u8 flags, __u16 rsvd,
 		__u32 nsid, __u32 cdw2, __u32 cdw3, __u32 cdw10, __u32 cdw11,
 		__u32 cdw12, __u32 cdw13, __u32 cdw14, __u32 cdw15,
 		__u32 data_len, void *data, __u32 metadata_len, void *metadata,
@@ -540,7 +548,7 @@ int nvme_io_passthru(int fd, __u8 opcode, __u8 flags, __u16 rsvd,
  * Return: Zero if a subsystem reset was initiated or -1 with errno set
  * otherwise.
  */
-int nvme_subsystem_reset(int fd);
+NVME_API int nvme_subsystem_reset(int fd);
 
 /**
  * nvme_ctrl_reset() - Initiate a controller reset
@@ -550,7 +558,7 @@ int nvme_subsystem_reset(int fd);
  *
  * Return: 0 if a reset was initiated or -1 with errno set otherwise.
  */
-int nvme_ctrl_reset(int fd);
+NVME_API int nvme_ctrl_reset(int fd);
 
 /**
  * nvme_ns_rescan() - Initiate a controller rescan
@@ -560,7 +568,7 @@ int nvme_ctrl_reset(int fd);
  *
  * Return: 0 if a rescan was initiated or -1 with errno set otherwise.
  */
-int nvme_ns_rescan(int fd);
+NVME_API int nvme_ns_rescan(int fd);
 
 /**
  * nvme_get_nsid() - Retrieve the NSID from a namespace file descriptor
@@ -574,7 +582,7 @@ int nvme_ns_rescan(int fd);
  *
  * Return: 0 if @nsid was set successfully or -1 with errno set otherwise.
  */
-int nvme_get_nsid(int fd, __u32 *nsid);
+NVME_API int nvme_get_nsid(int fd, __u32 *nsid);
 
 /**
  * nvme_identify() - Send the NVMe Identify command
@@ -586,7 +594,7 @@ int nvme_get_nsid(int fd, __u32 *nsid);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_identify(struct nvme_identify_args *args);
+NVME_API int nvme_identify(struct nvme_identify_args *args);
 
 static inline int nvme_identify_cns_nsid(int fd, enum nvme_identify_cns cns,
 					 __u32 nsid, void *data)
@@ -950,8 +958,13 @@ static inline int nvme_identify_ns_granularity(int fd,
  */
 static inline int nvme_identify_uuid(int fd, struct nvme_id_uuid_list *uuid_list)
 {
+#ifdef WINDOWS_GCC
+	return nvme_identify_cns_nsid(fd, NVME_IDENTIFY_CNS_UUID_LIST_WIN,
+				      NVME_NSID_NONE, uuid_list);
+#else
 	return nvme_identify_cns_nsid(fd, NVME_IDENTIFY_CNS_UUID_LIST,
 				      NVME_NSID_NONE, uuid_list);
+#endif
 }
 
 /**
@@ -1226,7 +1239,11 @@ static inline int nvme_identify_domain_list(int fd, __u16 domid,
 		.args_size = sizeof(args),
 		.fd = fd,
 		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
+		#ifdef WINDOWS_GCC
+		.cns = NVME_IDENTIFY_CNS_DOMAIN_LIST_WIN,
+		#else
 		.cns = NVME_IDENTIFY_CNS_DOMAIN_LIST,
+		#endif
 		.csi = NVME_CSI_NVM,
 		.nsid = NVME_NSID_NONE,
 		.cntid = NVME_CNTLID_NONE,
@@ -1334,7 +1351,7 @@ static inline int nvme_zns_identify_ctrl(int fd, struct nvme_zns_id_ctrl *id)
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_log(struct nvme_get_log_args *args);
+NVME_API int nvme_get_log(struct nvme_get_log_args *args);
 
 /**
  * nvme_get_log_page() - Get log page data
@@ -1345,7 +1362,7 @@ int nvme_get_log(struct nvme_get_log_args *args);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_log_page(int fd, __u32 xfer_len, struct nvme_get_log_args *args);
+NVME_API int nvme_get_log_page(int fd, __u32 xfer_len, struct nvme_get_log_args *args);
 
 static inline int nvme_get_nsid_log(int fd, bool rae,
 			enum nvme_cmd_get_log_lid lid,
@@ -1983,7 +2000,7 @@ static inline int nvme_get_log_ana_groups(int fd, bool rae, __u32 len,
  * because chgcnt changed during each of the retries attempts.
  * Sets errno = ENOSPC if the full log page does not fit in the provided buffer.
  */
-int nvme_get_ana_log_atomic(int fd, bool rgo, bool rae, unsigned int retries,
+NVME_API int nvme_get_ana_log_atomic(int fd, bool rgo, bool rae, unsigned int retries,
 			    struct nvme_ana_log *log, __u32 *len);
 
 /**
@@ -2603,7 +2620,7 @@ static inline int nvme_get_log_lockdown(int fd,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features(struct nvme_set_features_args *args);
+NVME_API int nvme_set_features(struct nvme_set_features_args *args);
 
 /**
  * nvme_set_features_data() - Helper function for @nvme_set_features()
@@ -2674,7 +2691,7 @@ static inline int nvme_set_features_simple(int fd, __u8 fid, __u32 nsid,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_arbitration(int fd, __u8 ab, __u8 lpw, __u8 mpw,
+NVME_API int nvme_set_features_arbitration(int fd, __u8 ab, __u8 lpw, __u8 mpw,
 				  __u8 hpw, bool  save, __u32 *result);
 
 /**
@@ -2688,7 +2705,7 @@ int nvme_set_features_arbitration(int fd, __u8 ab, __u8 lpw, __u8 mpw,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_power_mgmt(int fd, __u8 ps, __u8 wh, bool save,
+NVME_API int nvme_set_features_power_mgmt(int fd, __u8 ps, __u8 wh, bool save,
 				 __u32 *result);
 
 /**
@@ -2703,7 +2720,7 @@ int nvme_set_features_power_mgmt(int fd, __u8 ps, __u8 wh, bool save,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_lba_range(int fd, __u32 nsid, __u8 nr_ranges, bool save,
+NVME_API int nvme_set_features_lba_range(int fd, __u32 nsid, __u8 nr_ranges, bool save,
 				struct nvme_lba_range_type *data, __u32 *result);
 
 /**
@@ -2718,7 +2735,7 @@ int nvme_set_features_lba_range(int fd, __u32 nsid, __u8 nr_ranges, bool save,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_temp_thresh(int fd, __u16 tmpth, __u8 tmpsel,
+NVME_API int nvme_set_features_temp_thresh(int fd, __u16 tmpth, __u8 tmpsel,
 				  enum nvme_feat_tmpthresh_thsel thsel,
 				  bool save, __u32 *result);
 
@@ -2735,7 +2752,7 @@ int nvme_set_features_temp_thresh(int fd, __u16 tmpth, __u8 tmpsel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_temp_thresh2(int fd, __u16 tmpth, __u8 tmpsel,
+NVME_API int nvme_set_features_temp_thresh2(int fd, __u16 tmpth, __u8 tmpsel,
 				   enum nvme_feat_tmpthresh_thsel thsel, __u8 tmpthh,
 				   bool save, __u32 *result);
 
@@ -2751,7 +2768,7 @@ int nvme_set_features_temp_thresh2(int fd, __u16 tmpth, __u8 tmpsel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_err_recovery(int fd, __u32 nsid, __u16 tler,
+NVME_API int nvme_set_features_err_recovery(int fd, __u32 nsid, __u16 tler,
 				   bool dulbe, bool save, __u32 *result);
 
 /**
@@ -2764,7 +2781,7 @@ int nvme_set_features_err_recovery(int fd, __u32 nsid, __u16 tler,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_volatile_wc(int fd, bool wce, bool save,
+NVME_API int nvme_set_features_volatile_wc(int fd, bool wce, bool save,
 				  __u32 *result);
 
 /**
@@ -2778,7 +2795,7 @@ int nvme_set_features_volatile_wc(int fd, bool wce, bool save,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_irq_coalesce(int fd, __u8 thr, __u8 time,
+NVME_API int nvme_set_features_irq_coalesce(int fd, __u8 thr, __u8 time,
 				   bool save, __u32 *result);
 
 /**
@@ -2792,7 +2809,7 @@ int nvme_set_features_irq_coalesce(int fd, __u8 thr, __u8 time,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_irq_config(int fd, __u16 iv, bool cd, bool save,
+NVME_API int nvme_set_features_irq_config(int fd, __u16 iv, bool cd, bool save,
 				 __u32 *result);
 
 /**
@@ -2805,7 +2822,7 @@ int nvme_set_features_irq_config(int fd, __u16 iv, bool cd, bool save,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_write_atomic(int fd, bool dn, bool save,
+NVME_API int nvme_set_features_write_atomic(int fd, bool dn, bool save,
 				   __u32 *result);
 
 /**
@@ -2818,7 +2835,7 @@ int nvme_set_features_write_atomic(int fd, bool dn, bool save,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_async_event(int fd, __u32 events, bool save,
+NVME_API int nvme_set_features_async_event(int fd, __u32 events, bool save,
 				  __u32 *result);
 
 /**
@@ -2832,7 +2849,7 @@ int nvme_set_features_async_event(int fd, __u32 events, bool save,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_auto_pst(int fd, bool apste, bool save,
+NVME_API int nvme_set_features_auto_pst(int fd, bool apste, bool save,
 			       struct nvme_feat_auto_pst *apst,
 			       __u32 *result);
 
@@ -2845,7 +2862,7 @@ int nvme_set_features_auto_pst(int fd, bool apste, bool save,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_timestamp(int fd, bool save, __u64 timestamp);
+NVME_API int nvme_set_features_timestamp(int fd, bool save, __u64 timestamp);
 
 /**
  * nvme_set_features_hctm() - Set thermal management feature
@@ -2858,7 +2875,7 @@ int nvme_set_features_timestamp(int fd, bool save, __u64 timestamp);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_hctm(int fd, __u16 tmt2, __u16 tmt1, bool save,
+NVME_API int nvme_set_features_hctm(int fd, __u16 tmt2, __u16 tmt1, bool save,
 			   __u32 *result);
 
 /**
@@ -2871,7 +2888,7 @@ int nvme_set_features_hctm(int fd, __u16 tmt2, __u16 tmt1, bool save,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_nopsc(int fd, bool noppme, bool save, __u32 *result);
+NVME_API int nvme_set_features_nopsc(int fd, bool noppme, bool save, __u32 *result);
 
 /**
  * nvme_set_features_rrl() - Set read recovery level feature
@@ -2884,7 +2901,7 @@ int nvme_set_features_nopsc(int fd, bool noppme, bool save, __u32 *result);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_rrl(int fd, __u8 rrl, __u16 nvmsetid, bool save,
+NVME_API int nvme_set_features_rrl(int fd, __u8 rrl, __u16 nvmsetid, bool save,
 			  __u32 *result);
 
 /**
@@ -2899,7 +2916,7 @@ int nvme_set_features_rrl(int fd, __u8 rrl, __u16 nvmsetid, bool save,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_plm_config(int fd, bool enable, __u16 nvmsetid,
+NVME_API int nvme_set_features_plm_config(int fd, bool enable, __u16 nvmsetid,
 				 bool save, struct nvme_plm_config *data,
 				 __u32 *result);
 
@@ -2914,7 +2931,7 @@ int nvme_set_features_plm_config(int fd, bool enable, __u16 nvmsetid,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_plm_window(int fd, enum nvme_feat_plm_window_select sel,
+NVME_API int nvme_set_features_plm_window(int fd, enum nvme_feat_plm_window_select sel,
 				 __u16 nvmsetid, bool save, __u32 *result);
 
 /**
@@ -2928,7 +2945,7 @@ int nvme_set_features_plm_window(int fd, enum nvme_feat_plm_window_select sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_lba_sts_interval(int fd, __u16 lsiri, __u16 lsipi,
+NVME_API int nvme_set_features_lba_sts_interval(int fd, __u16 lsiri, __u16 lsipi,
 				       bool save, __u32 *result);
 
 /**
@@ -2940,7 +2957,7 @@ int nvme_set_features_lba_sts_interval(int fd, __u16 lsiri, __u16 lsipi,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_host_behavior(int fd, bool save,
+NVME_API int nvme_set_features_host_behavior(int fd, bool save,
 				    struct nvme_feat_host_behavior *data);
 
 /**
@@ -2953,7 +2970,7 @@ int nvme_set_features_host_behavior(int fd, bool save,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_sanitize(int fd, bool nodrm, bool save, __u32 *result);
+NVME_API int nvme_set_features_sanitize(int fd, bool nodrm, bool save, __u32 *result);
 
 /**
  * nvme_set_features_endurance_evt_cfg() - Set endurance event config feature
@@ -2966,7 +2983,7 @@ int nvme_set_features_sanitize(int fd, bool nodrm, bool save, __u32 *result);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_endurance_evt_cfg(int fd, __u16 endgid, __u8 egwarn,
+NVME_API int nvme_set_features_endurance_evt_cfg(int fd, __u16 endgid, __u8 egwarn,
 					bool save, __u32 *result);
 
 /**
@@ -2979,7 +2996,7 @@ int nvme_set_features_endurance_evt_cfg(int fd, __u16 endgid, __u8 egwarn,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_sw_progress(int fd, __u8 pbslc, bool save,
+NVME_API int nvme_set_features_sw_progress(int fd, __u8 pbslc, bool save,
 				  __u32 *result);
 
 /**
@@ -2992,7 +3009,7 @@ int nvme_set_features_sw_progress(int fd, __u8 pbslc, bool save,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_host_id(int fd, bool exhid, bool save, __u8 *hostid);
+NVME_API int nvme_set_features_host_id(int fd, bool exhid, bool save, __u8 *hostid);
 
 /**
  * nvme_set_features_resv_mask() - Set reservation notification mask feature
@@ -3008,7 +3025,7 @@ int nvme_set_features_host_id(int fd, bool exhid, bool save, __u8 *hostid);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_resv_mask(int fd, __u32 mask, bool save, __u32 *result)
+NVME_API int nvme_set_features_resv_mask(int fd, __u32 mask, bool save, __u32 *result)
 	__attribute__((deprecated));
 
 /**
@@ -3022,7 +3039,7 @@ int nvme_set_features_resv_mask(int fd, __u32 mask, bool save, __u32 *result)
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_resv_mask2(int fd, __u32 nsid, __u32 mask, bool save,
+NVME_API int nvme_set_features_resv_mask2(int fd, __u32 nsid, __u32 mask, bool save,
 				 __u32 *result);
 
 /**
@@ -3039,7 +3056,7 @@ int nvme_set_features_resv_mask2(int fd, __u32 nsid, __u32 mask, bool save,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_resv_persist(int fd, bool ptpl, bool save, __u32 *result)
+NVME_API int nvme_set_features_resv_persist(int fd, bool ptpl, bool save, __u32 *result)
 	 __attribute__((deprecated));
 
 /**
@@ -3053,7 +3070,7 @@ int nvme_set_features_resv_persist(int fd, bool ptpl, bool save, __u32 *result)
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_resv_persist2(int fd, __u32 nsid, bool ptpl, bool save,
+NVME_API int nvme_set_features_resv_persist2(int fd, __u32 nsid, bool ptpl, bool save,
 				    __u32 *result);
 
 /**
@@ -3070,7 +3087,7 @@ int nvme_set_features_resv_persist2(int fd, __u32 nsid, bool ptpl, bool save,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_write_protect(int fd, enum nvme_feat_nswpcfg_state state,
+NVME_API int nvme_set_features_write_protect(int fd, enum nvme_feat_nswpcfg_state state,
 				    bool save, __u32 *result)
 	__attribute__((deprecated));
 
@@ -3085,7 +3102,7 @@ int nvme_set_features_write_protect(int fd, enum nvme_feat_nswpcfg_state state,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_write_protect2(int fd, __u32 nsid,
+NVME_API int nvme_set_features_write_protect2(int fd, __u32 nsid,
 				     enum nvme_feat_nswpcfg_state state,
 				     bool save, __u32 *result);
 
@@ -3098,7 +3115,7 @@ int nvme_set_features_write_protect2(int fd, __u32 nsid,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_features_iocs_profile(int fd, __u16 iocsi, bool save);
+NVME_API int nvme_set_features_iocs_profile(int fd, __u16 iocsi, bool save);
 
 /**
  * nvme_get_features() - Retrieve a feature attribute
@@ -3107,7 +3124,7 @@ int nvme_set_features_iocs_profile(int fd, __u16 iocsi, bool save);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features(struct nvme_get_features_args *args);
+NVME_API int nvme_get_features(struct nvme_get_features_args *args);
 
 /**
  * nvme_get_features_data() - Helper function for @nvme_get_features()
@@ -3166,7 +3183,7 @@ static inline int nvme_get_features_simple(int fd, enum nvme_features_id fid,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_arbitration(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_arbitration(int fd, enum nvme_get_features_sel sel,
 				  __u32 *result);
 
 /**
@@ -3178,7 +3195,7 @@ int nvme_get_features_arbitration(int fd, enum nvme_get_features_sel sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_power_mgmt(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_power_mgmt(int fd, enum nvme_get_features_sel sel,
 				 __u32 *result);
 
 /**
@@ -3195,7 +3212,7 @@ int nvme_get_features_power_mgmt(int fd, enum nvme_get_features_sel sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_lba_range(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_lba_range(int fd, enum nvme_get_features_sel sel,
 				struct nvme_lba_range_type *data,
 				__u32 *result) __attribute__((deprecated));
 
@@ -3210,7 +3227,7 @@ int nvme_get_features_lba_range(int fd, enum nvme_get_features_sel sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_lba_range2(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_lba_range2(int fd, enum nvme_get_features_sel sel,
 				 __u32 nsid, struct nvme_lba_range_type *data,
 				 __u32 *result);
 
@@ -3223,7 +3240,7 @@ int nvme_get_features_lba_range2(int fd, enum nvme_get_features_sel sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_temp_thresh(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_temp_thresh(int fd, enum nvme_get_features_sel sel,
 				  __u32 *result);
 
 /**
@@ -3237,7 +3254,7 @@ int nvme_get_features_temp_thresh(int fd, enum nvme_get_features_sel sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_temp_thresh2(int fd, enum nvme_get_features_sel sel, __u8 tmpsel,
+NVME_API int nvme_get_features_temp_thresh2(int fd, enum nvme_get_features_sel sel, __u8 tmpsel,
 				   enum nvme_feat_tmpthresh_thsel thsel, __u32 *result);
 
 /**
@@ -3253,7 +3270,7 @@ int nvme_get_features_temp_thresh2(int fd, enum nvme_get_features_sel sel, __u8 
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_err_recovery(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_err_recovery(int fd, enum nvme_get_features_sel sel,
 				   __u32 *result) __attribute__((deprecated));
 
 /**
@@ -3266,7 +3283,7 @@ int nvme_get_features_err_recovery(int fd, enum nvme_get_features_sel sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_err_recovery2(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_err_recovery2(int fd, enum nvme_get_features_sel sel,
 				    __u32 nsid, __u32 *result);
 
 /**
@@ -3278,7 +3295,7 @@ int nvme_get_features_err_recovery2(int fd, enum nvme_get_features_sel sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_volatile_wc(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_volatile_wc(int fd, enum nvme_get_features_sel sel,
 				  __u32 *result);
 
 /**
@@ -3290,7 +3307,7 @@ int nvme_get_features_volatile_wc(int fd, enum nvme_get_features_sel sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_num_queues(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_num_queues(int fd, enum nvme_get_features_sel sel,
 				 __u32 *result);
 
 /**
@@ -3302,7 +3319,7 @@ int nvme_get_features_num_queues(int fd, enum nvme_get_features_sel sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_irq_coalesce(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_irq_coalesce(int fd, enum nvme_get_features_sel sel,
 				   __u32 *result);
 
 /**
@@ -3315,7 +3332,7 @@ int nvme_get_features_irq_coalesce(int fd, enum nvme_get_features_sel sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_irq_config(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_irq_config(int fd, enum nvme_get_features_sel sel,
 				 __u16 iv, __u32 *result);
 
 /**
@@ -3327,7 +3344,7 @@ int nvme_get_features_irq_config(int fd, enum nvme_get_features_sel sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_write_atomic(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_write_atomic(int fd, enum nvme_get_features_sel sel,
 				   __u32 *result);
 
 /**
@@ -3339,7 +3356,7 @@ int nvme_get_features_write_atomic(int fd, enum nvme_get_features_sel sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_async_event(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_async_event(int fd, enum nvme_get_features_sel sel,
 				  __u32 *result);
 
 /**
@@ -3352,7 +3369,7 @@ int nvme_get_features_async_event(int fd, enum nvme_get_features_sel sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_auto_pst(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_auto_pst(int fd, enum nvme_get_features_sel sel,
 			       struct nvme_feat_auto_pst *apst, __u32 *result);
 
 /**
@@ -3368,7 +3385,7 @@ int nvme_get_features_auto_pst(int fd, enum nvme_get_features_sel sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_host_mem_buf(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_host_mem_buf(int fd, enum nvme_get_features_sel sel,
 				   __u32 *result) __attribute__((deprecated));
 
 /**
@@ -3381,7 +3398,7 @@ int nvme_get_features_host_mem_buf(int fd, enum nvme_get_features_sel sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_host_mem_buf2(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_host_mem_buf2(int fd, enum nvme_get_features_sel sel,
 				    struct nvme_host_mem_buf_attrs *attrs,
 				    __u32 *result);
 
@@ -3394,7 +3411,7 @@ int nvme_get_features_host_mem_buf2(int fd, enum nvme_get_features_sel sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_timestamp(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_timestamp(int fd, enum nvme_get_features_sel sel,
 				struct nvme_timestamp *ts);
 
 /**
@@ -3406,7 +3423,7 @@ int nvme_get_features_timestamp(int fd, enum nvme_get_features_sel sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_kato(int fd, enum nvme_get_features_sel sel, __u32 *result);
+NVME_API int nvme_get_features_kato(int fd, enum nvme_get_features_sel sel, __u32 *result);
 
 /**
  * nvme_get_features_hctm() - Get thermal management feature
@@ -3417,7 +3434,7 @@ int nvme_get_features_kato(int fd, enum nvme_get_features_sel sel, __u32 *result
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_hctm(int fd, enum nvme_get_features_sel sel, __u32 *result);
+NVME_API int nvme_get_features_hctm(int fd, enum nvme_get_features_sel sel, __u32 *result);
 
 /**
  * nvme_get_features_nopsc() - Get non-operational power state feature
@@ -3428,7 +3445,7 @@ int nvme_get_features_hctm(int fd, enum nvme_get_features_sel sel, __u32 *result
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_nopsc(int fd, enum nvme_get_features_sel sel, __u32 *result);
+NVME_API int nvme_get_features_nopsc(int fd, enum nvme_get_features_sel sel, __u32 *result);
 
 /**
  * nvme_get_features_rrl() - Get read recovery level feature
@@ -3439,7 +3456,7 @@ int nvme_get_features_nopsc(int fd, enum nvme_get_features_sel sel, __u32 *resul
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_rrl(int fd, enum nvme_get_features_sel sel, __u32 *result);
+NVME_API int nvme_get_features_rrl(int fd, enum nvme_get_features_sel sel, __u32 *result);
 
 /**
  * nvme_get_features_plm_config() - Get predictable latency feature
@@ -3452,7 +3469,7 @@ int nvme_get_features_rrl(int fd, enum nvme_get_features_sel sel, __u32 *result)
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_plm_config(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_plm_config(int fd, enum nvme_get_features_sel sel,
 				 __u16 nvmsetid, struct nvme_plm_config *data,
 				 __u32 *result);
 
@@ -3466,7 +3483,7 @@ int nvme_get_features_plm_config(int fd, enum nvme_get_features_sel sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_plm_window(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_plm_window(int fd, enum nvme_get_features_sel sel,
 	__u16 nvmsetid, __u32 *result);
 
 /**
@@ -3478,7 +3495,7 @@ int nvme_get_features_plm_window(int fd, enum nvme_get_features_sel sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_lba_sts_interval(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_lba_sts_interval(int fd, enum nvme_get_features_sel sel,
 				       __u32 *result);
 
 /**
@@ -3491,7 +3508,7 @@ int nvme_get_features_lba_sts_interval(int fd, enum nvme_get_features_sel sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_host_behavior(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_host_behavior(int fd, enum nvme_get_features_sel sel,
 				    struct nvme_feat_host_behavior *data,
 				    __u32 *result);
 
@@ -3504,7 +3521,7 @@ int nvme_get_features_host_behavior(int fd, enum nvme_get_features_sel sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_sanitize(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_sanitize(int fd, enum nvme_get_features_sel sel,
 				__u32 *result);
 
 /**
@@ -3517,7 +3534,7 @@ int nvme_get_features_sanitize(int fd, enum nvme_get_features_sel sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_endurance_event_cfg(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_endurance_event_cfg(int fd, enum nvme_get_features_sel sel,
 					  __u16 endgid, __u32 *result);
 
 /**
@@ -3529,7 +3546,7 @@ int nvme_get_features_endurance_event_cfg(int fd, enum nvme_get_features_sel sel
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_sw_progress(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_sw_progress(int fd, enum nvme_get_features_sel sel,
 				  __u32 *result);
 
 /**
@@ -3543,7 +3560,7 @@ int nvme_get_features_sw_progress(int fd, enum nvme_get_features_sel sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_host_id(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_host_id(int fd, enum nvme_get_features_sel sel,
 			      bool exhid, __u32 len, __u8 *hostid);
 
 /**
@@ -3559,7 +3576,7 @@ int nvme_get_features_host_id(int fd, enum nvme_get_features_sel sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_resv_mask(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_resv_mask(int fd, enum nvme_get_features_sel sel,
 				__u32 *result) __attribute__((deprecated));
 
 /**
@@ -3572,7 +3589,7 @@ int nvme_get_features_resv_mask(int fd, enum nvme_get_features_sel sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_resv_mask2(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_resv_mask2(int fd, enum nvme_get_features_sel sel,
 				 __u32 nsid, __u32 *result);
 
 /**
@@ -3588,7 +3605,7 @@ int nvme_get_features_resv_mask2(int fd, enum nvme_get_features_sel sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_resv_persist(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_resv_persist(int fd, enum nvme_get_features_sel sel,
 				   __u32 *result) __attribute__((deprecated));
 
 /**
@@ -3601,7 +3618,7 @@ int nvme_get_features_resv_persist(int fd, enum nvme_get_features_sel sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_resv_persist2(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_resv_persist2(int fd, enum nvme_get_features_sel sel,
 				    __u32 nsid, __u32 *result);
 
 /**
@@ -3614,7 +3631,7 @@ int nvme_get_features_resv_persist2(int fd, enum nvme_get_features_sel sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_write_protect(int fd, __u32 nsid,
+NVME_API int nvme_get_features_write_protect(int fd, __u32 nsid,
 				    enum nvme_get_features_sel sel,
 				    __u32 *result);
 
@@ -3627,7 +3644,7 @@ int nvme_get_features_write_protect(int fd, __u32 nsid,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_features_iocs_profile(int fd, enum nvme_get_features_sel sel,
+NVME_API int nvme_get_features_iocs_profile(int fd, enum nvme_get_features_sel sel,
 				   __u32 *result);
 
 /**
@@ -3642,7 +3659,7 @@ int nvme_get_features_iocs_profile(int fd, enum nvme_get_features_sel sel,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_format_nvm(struct nvme_format_nvm_args *args);
+NVME_API int nvme_format_nvm(struct nvme_format_nvm_args *args);
 
 /**
  * nvme_ns_mgmt() - Issue a Namespace management command
@@ -3651,7 +3668,7 @@ int nvme_format_nvm(struct nvme_format_nvm_args *args);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_ns_mgmt(struct nvme_ns_mgmt_args *args);
+NVME_API int nvme_ns_mgmt(struct nvme_ns_mgmt_args *args);
 
 /**
  * nvme_ns_mgmt_create() - Create a non attached namespace
@@ -3748,7 +3765,7 @@ static inline int nvme_ns_mgmt_delete(int fd, __u32 nsid)
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_ns_attach(struct nvme_ns_attach_args *args);
+NVME_API int nvme_ns_attach(struct nvme_ns_attach_args *args);
 
 /**
  * nvme_ns_attach_ctrls() - Attach namespace to controllers
@@ -3821,7 +3838,7 @@ static inline int nvme_ns_detach_ctrls(int fd, __u32 nsid,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_fw_download(struct nvme_fw_download_args *args);
+NVME_API int nvme_fw_download(struct nvme_fw_download_args *args);
 
 /**
  * nvme_fw_commit() - Commit firmware using the specified action
@@ -3834,7 +3851,7 @@ int nvme_fw_download(struct nvme_fw_download_args *args);
  * status response may specify additional reset actions required to complete
  * the commit process.
  */
-int nvme_fw_commit(struct nvme_fw_commit_args *args);
+NVME_API int nvme_fw_commit(struct nvme_fw_commit_args *args);
 
 /**
  * nvme_security_send() - Security Send command
@@ -3852,7 +3869,7 @@ int nvme_fw_commit(struct nvme_fw_commit_args *args);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_security_send(struct nvme_security_send_args *args);
+NVME_API int nvme_security_send(struct nvme_security_send_args *args);
 
 /**
  * nvme_security_receive() - Security Receive command
@@ -3861,7 +3878,7 @@ int nvme_security_send(struct nvme_security_send_args *args);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_security_receive(struct nvme_security_receive_args *args);
+NVME_API int nvme_security_receive(struct nvme_security_receive_args *args);
 
 /**
  * nvme_get_lba_status() - Retrieve information on possibly unrecoverable LBAs
@@ -3873,7 +3890,7 @@ int nvme_security_receive(struct nvme_security_receive_args *args);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_lba_status(struct nvme_get_lba_status_args *args);
+NVME_API int nvme_get_lba_status(struct nvme_get_lba_status_args *args);
 
 /**
  * nvme_directive_send() - Send directive command
@@ -3888,7 +3905,7 @@ int nvme_get_lba_status(struct nvme_get_lba_status_args *args);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_directive_send(struct nvme_directive_send_args *args);
+NVME_API int nvme_directive_send(struct nvme_directive_send_args *args);
 
 /**
  * nvme_directive_send_id_endir() - Directive Send Enable Directive
@@ -3901,7 +3918,7 @@ int nvme_directive_send(struct nvme_directive_send_args *args);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_directive_send_id_endir(int fd, __u32 nsid, bool endir,
+NVME_API int nvme_directive_send_id_endir(int fd, __u32 nsid, bool endir,
 				 enum nvme_directive_dtype dtype,
 				 struct nvme_id_directives *id);
 
@@ -3968,7 +3985,7 @@ static inline int nvme_directive_send_stream_release_resource(int fd, __u32 nsid
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_directive_recv(struct nvme_directive_recv_args *args);
+NVME_API int nvme_directive_recv(struct nvme_directive_recv_args *args);
 
 /**
  * nvme_directive_recv_identify_parameters() - Directive receive identifier parameters
@@ -4101,7 +4118,7 @@ static inline int nvme_directive_recv_stream_allocate(int fd, __u32 nsid,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_capacity_mgmt(struct nvme_capacity_mgmt_args *args);
+NVME_API int nvme_capacity_mgmt(struct nvme_capacity_mgmt_args *args);
 
 /**
  * nvme_lockdown() - Issue lockdown command
@@ -4110,7 +4127,7 @@ int nvme_capacity_mgmt(struct nvme_capacity_mgmt_args *args);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_lockdown(struct nvme_lockdown_args *args);
+NVME_API int nvme_lockdown(struct nvme_lockdown_args *args);
 
 /**
  * nvme_set_property() - Set controller property
@@ -4122,7 +4139,7 @@ int nvme_lockdown(struct nvme_lockdown_args *args);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_property(struct nvme_set_property_args *args);
+NVME_API int nvme_set_property(struct nvme_set_property_args *args);
 
 /**
  * nvme_get_property() - Get a controller property
@@ -4134,7 +4151,7 @@ int nvme_set_property(struct nvme_set_property_args *args);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_property(struct nvme_get_property_args *args);
+NVME_API int nvme_get_property(struct nvme_get_property_args *args);
 
 /**
  * nvme_sanitize_nvm() - Start a sanitize operation
@@ -4153,7 +4170,7 @@ int nvme_get_property(struct nvme_get_property_args *args);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_sanitize_nvm(struct nvme_sanitize_nvm_args *args);
+NVME_API int nvme_sanitize_nvm(struct nvme_sanitize_nvm_args *args);
 
 /**
  * nvme_dev_self_test() - Start or abort a self test
@@ -4173,7 +4190,7 @@ int nvme_sanitize_nvm(struct nvme_sanitize_nvm_args *args);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_dev_self_test(struct nvme_dev_self_test_args *args);
+NVME_API int nvme_dev_self_test(struct nvme_dev_self_test_args *args);
 
 /**
  * nvme_virtual_mgmt() - Virtualization resource management
@@ -4190,7 +4207,7 @@ int nvme_dev_self_test(struct nvme_dev_self_test_args *args);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_virtual_mgmt(struct nvme_virtual_mgmt_args *args);
+NVME_API int nvme_virtual_mgmt(struct nvme_virtual_mgmt_args *args);
 
 /**
  * nvme_flush() - Send an nvme flush command
@@ -4221,7 +4238,7 @@ static inline int nvme_flush(int fd, __u32 nsid)
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_io(struct nvme_io_args *args, __u8 opcode);
+NVME_API int nvme_io(struct nvme_io_args *args, __u8 opcode);
 
 /**
  * nvme_read() - Submit an nvme user read command
@@ -4322,7 +4339,7 @@ static inline int nvme_verify(struct nvme_io_args *args)
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_dsm(struct nvme_dsm_args *args);
+NVME_API int nvme_dsm(struct nvme_dsm_args *args);
 
 /**
  * nvme_copy() - Copy command
@@ -4332,7 +4349,7 @@ int nvme_dsm(struct nvme_dsm_args *args);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_copy(struct nvme_copy_args *args);
+NVME_API int nvme_copy(struct nvme_copy_args *args);
 
 /**
  * nvme_resv_acquire() - Send an nvme reservation acquire
@@ -4345,7 +4362,7 @@ int nvme_copy(struct nvme_copy_args *args);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_resv_acquire(struct nvme_resv_acquire_args *args);
+NVME_API int nvme_resv_acquire(struct nvme_resv_acquire_args *args);
 
 /**
  * nvme_resv_register() - Send an nvme reservation register
@@ -4357,7 +4374,7 @@ int nvme_resv_acquire(struct nvme_resv_acquire_args *args);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_resv_register(struct nvme_resv_register_args *args);
+NVME_API int nvme_resv_register(struct nvme_resv_register_args *args);
 
 /**
  * nvme_resv_release() - Send an nvme reservation release
@@ -4366,7 +4383,7 @@ int nvme_resv_register(struct nvme_resv_register_args *args);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_resv_release(struct nvme_resv_release_args *args);
+NVME_API int nvme_resv_release(struct nvme_resv_release_args *args);
 
 /**
  * nvme_resv_report() - Send an nvme reservation report
@@ -4379,7 +4396,7 @@ int nvme_resv_release(struct nvme_resv_release_args *args);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_resv_report(struct nvme_resv_report_args *args);
+NVME_API int nvme_resv_report(struct nvme_resv_report_args *args);
 
 /**
  * nvme_io_mgmt_recv() - I/O Management Receive command
@@ -4388,7 +4405,7 @@ int nvme_resv_report(struct nvme_resv_report_args *args);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_io_mgmt_recv(struct nvme_io_mgmt_recv_args *args);
+NVME_API int nvme_io_mgmt_recv(struct nvme_io_mgmt_recv_args *args);
 
 /**
  * nvme_fdp_reclaim_unit_handle_status() - Get reclaim unit handle status
@@ -4424,7 +4441,7 @@ static inline int nvme_fdp_reclaim_unit_handle_status(int fd, __u32 nsid,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_io_mgmt_send(struct nvme_io_mgmt_send_args *args);
+NVME_API int nvme_io_mgmt_send(struct nvme_io_mgmt_send_args *args);
 
 /**
  * nvme_fdp_reclaim_unit_handle_update() - Update a list of reclaim unit handles
@@ -4460,7 +4477,7 @@ static inline int nvme_fdp_reclaim_unit_handle_update(int fd, __u32 nsid,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_zns_mgmt_send(struct nvme_zns_mgmt_send_args *args);
+NVME_API int nvme_zns_mgmt_send(struct nvme_zns_mgmt_send_args *args);
 
 
 /**
@@ -4470,7 +4487,7 @@ int nvme_zns_mgmt_send(struct nvme_zns_mgmt_send_args *args);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_zns_mgmt_recv(struct nvme_zns_mgmt_recv_args *args);
+NVME_API int nvme_zns_mgmt_recv(struct nvme_zns_mgmt_recv_args *args);
 
 /**
  * nvme_zns_report_zones() - Return the list of zones
@@ -4519,7 +4536,7 @@ static inline int nvme_zns_report_zones(int fd, __u32 nsid, __u64 slba,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_zns_append(struct nvme_zns_append_args *args);
+NVME_API int nvme_zns_append(struct nvme_zns_append_args *args);
 
 /**
  * nvme_dim_send - Send a Discovery Information Management (DIM) command
@@ -4528,7 +4545,7 @@ int nvme_zns_append(struct nvme_zns_append_args *args);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_dim_send(struct nvme_dim_args *args);
+NVME_API int nvme_dim_send(struct nvme_dim_args *args);
 
 /**
  * nvme_lm_cdq() - Controller Data Queue - Controller Data Queue command
@@ -4537,7 +4554,7 @@ int nvme_dim_send(struct nvme_dim_args *args);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.)
  */
-int nvme_lm_cdq(struct nvme_lm_cdq_args *args);
+NVME_API int nvme_lm_cdq(struct nvme_lm_cdq_args *args);
 
 /**
  * nvme_lm_track_send() - Track Send command
@@ -4546,7 +4563,7 @@ int nvme_lm_cdq(struct nvme_lm_cdq_args *args);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_lm_track_send(struct nvme_lm_track_send_args *args);
+NVME_API int nvme_lm_track_send(struct nvme_lm_track_send_args *args);
 
 /**
  * nvme_lm_migration_send() - Migration Send command
@@ -4555,7 +4572,7 @@ int nvme_lm_track_send(struct nvme_lm_track_send_args *args);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_lm_migration_send(struct nvme_lm_migration_send_args *args);
+NVME_API int nvme_lm_migration_send(struct nvme_lm_migration_send_args *args);
 
 /**
  * nvme_lm_migration_recv - Migration Receive command
@@ -4564,7 +4581,7 @@ int nvme_lm_migration_send(struct nvme_lm_migration_send_args *args);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_lm_migration_recv(struct nvme_lm_migration_recv_args *args);
+NVME_API int nvme_lm_migration_recv(struct nvme_lm_migration_recv_args *args);
 
 /**
  * nvme_lm_set_features_ctrl_data_queue - Set Controller Datea Queue feature
@@ -4578,7 +4595,7 @@ int nvme_lm_migration_recv(struct nvme_lm_migration_recv_args *args);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_lm_set_features_ctrl_data_queue(int fd, __u16 cdqid, __u32 hp, __u32 tpt, bool etpt,
+NVME_API int nvme_lm_set_features_ctrl_data_queue(int fd, __u16 cdqid, __u32 hp, __u32 tpt, bool etpt,
 					 __u32 *result);
 
 /**
@@ -4591,7 +4608,7 @@ int nvme_lm_set_features_ctrl_data_queue(int fd, __u16 cdqid, __u32 hp, __u32 tp
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_lm_get_features_ctrl_data_queue(int fd, __u16 cdqid,
+NVME_API int nvme_lm_get_features_ctrl_data_queue(int fd, __u16 cdqid,
 					 struct nvme_lm_ctrl_data_queue_fid_data *data,
 					 __u32 *result);
 #endif /* _LIBNVME_IOCTL_H */

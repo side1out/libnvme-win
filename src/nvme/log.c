@@ -13,14 +13,19 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#ifdef WINDOWS_GCC
+#include "windows/syslog.h"
+#include "windows/compat.h"
+#else
 #include <syslog.h>
 #include <unistd.h>
+#endif
+#include "cleanup.h"
 #include <time.h>
 #include <string.h>
 #define LOG_FUNCNAME 1
 #include "private.h"
 #include "log.h"
-#include "cleanup.h"
 
 #ifndef LOG_CLOCK
 #define LOG_CLOCK CLOCK_MONOTONIC

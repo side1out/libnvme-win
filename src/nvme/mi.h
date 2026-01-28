@@ -84,7 +84,8 @@
 #ifndef _LIBNVME_MI_MI_H
 #define _LIBNVME_MI_MI_H
 
-#include <endian.h>
+// jdh #include <endian.h>
+#include <ccan/endian/endian.h>
 #include <stdint.h>
 
 #include <nvme/types.h>
@@ -652,7 +653,7 @@ struct nvme_mi_control_resp {
  *
  * Returns: A string representing the status value
  */
-const char *nvme_mi_status_to_string(int status);
+NVME_API const char *nvme_mi_status_to_string(int status);
 
 /**
  * nvme_mi_create_root() - Create top-level MI (root) handle.
@@ -673,7 +674,7 @@ nvme_root_t nvme_mi_create_root(FILE *fp, int log_level);
  * nvme_mi_free_root() - Free root object.
  * @root: root to free
  */
-void nvme_mi_free_root(nvme_root_t root);
+NVME_API void nvme_mi_free_root(nvme_root_t root);
 
 /**
  * nvme_mi_set_probe_enabled() - enable/disable the probe for new endpoints
@@ -870,7 +871,7 @@ nvme_mi_ctrl_t nvme_mi_next_ctrl(nvme_mi_ep_t ep, nvme_mi_ctrl_t c);
  *
  * See &nvme_mi_close
  */
-nvme_mi_ep_t nvme_mi_open_mctp(nvme_root_t root, unsigned int netid, uint8_t eid);
+NVME_API nvme_mi_ep_t nvme_mi_open_mctp(nvme_root_t root, unsigned int netid, uint8_t eid);
 
 /**
  * nvme_mi_aem_open() - Prepare an existing endpoint to receive AEMs
@@ -886,7 +887,7 @@ int nvme_mi_aem_open(nvme_mi_ep_t ep);
  *
  * @ep: Endpoint object to close
  */
-void nvme_mi_close(nvme_mi_ep_t ep);
+NVME_API void nvme_mi_close(nvme_mi_ep_t ep);
 
 /**
  * nvme_mi_scan_mctp - look for MCTP-connected NVMe-MI endpoints.
@@ -936,13 +937,13 @@ int nvme_mi_scan_ep(nvme_mi_ep_t ep, bool force_rescan);
  *
  * See &nvme_mi_close_ctrl
  */
-nvme_mi_ctrl_t nvme_mi_init_ctrl(nvme_mi_ep_t ep, __u16 ctrl_id);
+NVME_API nvme_mi_ctrl_t nvme_mi_init_ctrl(nvme_mi_ep_t ep, __u16 ctrl_id);
 
 /**
  * nvme_mi_close_ctrl() - free a controller
  * @ctrl: controller to free
  */
-void nvme_mi_close_ctrl(nvme_mi_ctrl_t ctrl);
+NVME_API void nvme_mi_close_ctrl(nvme_mi_ctrl_t ctrl);
 
 /**
  * nvme_mi_ctrl_id() - get the ID of a controller
@@ -1407,7 +1408,7 @@ int nvme_mi_admin_xfer(nvme_mi_ctrl_t ctrl,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_mi_admin_admin_passthru(nvme_mi_ctrl_t ctrl, __u8 opcode, __u8 flags,
+NVME_API int nvme_mi_admin_admin_passthru(nvme_mi_ctrl_t ctrl, __u8 opcode, __u8 flags,
 				 __u16 rsvd, __u32 nsid, __u32 cdw2, __u32 cdw3,
 				 __u32 cdw10, __u32 cdw11, __u32 cdw12,
 				 __u32 cdw13, __u32 cdw14, __u32 cdw15,
@@ -1441,7 +1442,7 @@ int nvme_mi_admin_admin_passthru(nvme_mi_ctrl_t ctrl, __u8 opcode, __u8 flags,
  *
  * See: &struct nvme_identify_args
  */
-int nvme_mi_admin_identify_partial(nvme_mi_ctrl_t ctrl,
+NVME_API int nvme_mi_admin_identify_partial(nvme_mi_ctrl_t ctrl,
 				   struct nvme_identify_args *args,
 				   off_t offset, size_t size);
 
@@ -1860,7 +1861,7 @@ static inline int nvme_mi_admin_identify_secondary_ctrl_list(nvme_mi_ctrl_t ctrl
  *
  * See: &struct nvme_get_log_args
  */
-int nvme_mi_admin_get_log_page(nvme_mi_ctrl_t ctrl, __u32 xfer_len,
+NVME_API int nvme_mi_admin_get_log_page(nvme_mi_ctrl_t ctrl, __u32 xfer_len,
 			       struct nvme_get_log_args *args);
 
 /**
@@ -1881,7 +1882,7 @@ int nvme_mi_admin_get_log_page(nvme_mi_ctrl_t ctrl, __u32 xfer_len,
  *
  * See: &struct nvme_get_log_args
  */
-int nvme_mi_admin_get_log(nvme_mi_ctrl_t ctrl, struct nvme_get_log_args *args);
+NVME_API int nvme_mi_admin_get_log(nvme_mi_ctrl_t ctrl, struct nvme_get_log_args *args);
 
 /**
  * nvme_mi_admin_get_nsid_log() - Helper for Get Log Page functions
@@ -2455,7 +2456,7 @@ static inline int nvme_mi_admin_get_log_ana_groups(nvme_mi_ctrl_t ctrl,
  * because chgcnt changed during each of the retries attempts.
  * Sets errno = ENOSPC if the full log page does not fit in the provided buffer.
  */
-int nvme_mi_admin_get_ana_log_atomic(nvme_mi_ctrl_t ctrl, bool rgo, bool rae,
+NVME_API int nvme_mi_admin_get_ana_log_atomic(nvme_mi_ctrl_t ctrl, bool rgo, bool rae,
 				     unsigned int retries,
 				     struct nvme_ana_log *log, __u32 *len);
 
@@ -3092,7 +3093,7 @@ static inline int nvme_mi_admin_get_log_lockdown(nvme_mi_ctrl_t ctrl,
  *
  * See: &struct nvme_get_log_args
  */
-int nvme_mi_admin_security_send(nvme_mi_ctrl_t ctrl,
+NVME_API int nvme_mi_admin_security_send(nvme_mi_ctrl_t ctrl,
 				struct nvme_security_send_args *args);
 
 /**
@@ -3114,7 +3115,7 @@ int nvme_mi_admin_security_send(nvme_mi_ctrl_t ctrl,
  *
  * See: &struct nvme_get_log_args
  */
-int nvme_mi_admin_security_recv(nvme_mi_ctrl_t ctrl,
+NVME_API int nvme_mi_admin_security_recv(nvme_mi_ctrl_t ctrl,
 				struct nvme_security_receive_args *args);
 
 /**
@@ -3134,7 +3135,7 @@ int nvme_mi_admin_security_recv(nvme_mi_ctrl_t ctrl,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_mi_admin_get_features(nvme_mi_ctrl_t ctrl,
+NVME_API int nvme_mi_admin_get_features(nvme_mi_ctrl_t ctrl,
 			       struct nvme_get_features_args *args);
 
 /**
@@ -3146,7 +3147,7 @@ int nvme_mi_admin_get_features(nvme_mi_ctrl_t ctrl,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_mi_admin_get_features_arbitration(nvme_mi_ctrl_t ctrl, enum nvme_get_features_sel sel,
+NVME_API int nvme_mi_admin_get_features_arbitration(nvme_mi_ctrl_t ctrl, enum nvme_get_features_sel sel,
 					   __u32 *result);
 
 /**
@@ -3158,7 +3159,7 @@ int nvme_mi_admin_get_features_arbitration(nvme_mi_ctrl_t ctrl, enum nvme_get_fe
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_mi_admin_get_features_power_mgmt(nvme_mi_ctrl_t ctrl, enum nvme_get_features_sel sel,
+NVME_API int nvme_mi_admin_get_features_power_mgmt(nvme_mi_ctrl_t ctrl, enum nvme_get_features_sel sel,
 					  __u32 *result);
 
 /**
@@ -3229,7 +3230,7 @@ static inline int nvme_mi_admin_get_features_simple(nvme_mi_ctrl_t ctrl,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_mi_admin_set_features(nvme_mi_ctrl_t ctrl,
+NVME_API int nvme_mi_admin_set_features(nvme_mi_ctrl_t ctrl,
 			       struct nvme_set_features_args *args);
 
 /**
@@ -3243,7 +3244,7 @@ int nvme_mi_admin_set_features(nvme_mi_ctrl_t ctrl,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_mi_admin_set_features_power_mgmt(nvme_mi_ctrl_t ctrl, __u8 ps, __u8 wh, bool save,
+NVME_API int nvme_mi_admin_set_features_power_mgmt(nvme_mi_ctrl_t ctrl, __u8 ps, __u8 wh, bool save,
 					  __u32 *result);
 
 /**
@@ -3257,7 +3258,7 @@ int nvme_mi_admin_set_features_power_mgmt(nvme_mi_ctrl_t ctrl, __u8 ps, __u8 wh,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_mi_admin_ns_mgmt(nvme_mi_ctrl_t ctrl,
+NVME_API int nvme_mi_admin_ns_mgmt(nvme_mi_ctrl_t ctrl,
 			  struct nvme_ns_mgmt_args *args);
 
 /**
@@ -3322,7 +3323,7 @@ static inline int nvme_mi_admin_ns_mgmt_delete(nvme_mi_ctrl_t ctrl, __u32 nsid)
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_mi_admin_ns_attach(nvme_mi_ctrl_t ctrl,
+NVME_API int nvme_mi_admin_ns_attach(nvme_mi_ctrl_t ctrl,
 			    struct nvme_ns_attach_args *args);
 
 /**
@@ -3392,7 +3393,7 @@ static inline int nvme_mi_admin_ns_detach_ctrls(nvme_mi_ctrl_t ctrl, __u32 nsid,
  *
  * Return: 0 on success, non-zero on failure
  */
-int nvme_mi_admin_fw_download(nvme_mi_ctrl_t ctrl,
+NVME_API int nvme_mi_admin_fw_download(nvme_mi_ctrl_t ctrl,
 			      struct nvme_fw_download_args *args);
 
 /**
@@ -3404,7 +3405,7 @@ int nvme_mi_admin_fw_download(nvme_mi_ctrl_t ctrl,
  *
  * Return: 0 on success, non-zero on failure
  */
-int nvme_mi_admin_fw_commit(nvme_mi_ctrl_t ctrl,
+NVME_API int nvme_mi_admin_fw_commit(nvme_mi_ctrl_t ctrl,
 			    struct nvme_fw_commit_args *args);
 
 /**
@@ -3418,7 +3419,7 @@ int nvme_mi_admin_fw_commit(nvme_mi_ctrl_t ctrl,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_mi_admin_format_nvm(nvme_mi_ctrl_t ctrl,
+NVME_API int nvme_mi_admin_format_nvm(nvme_mi_ctrl_t ctrl,
 			     struct nvme_format_nvm_args *args);
 
 /**
@@ -3439,7 +3440,7 @@ int nvme_mi_admin_format_nvm(nvme_mi_ctrl_t ctrl,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_mi_admin_sanitize_nvm(nvme_mi_ctrl_t ctrl,
+NVME_API int nvme_mi_admin_sanitize_nvm(nvme_mi_ctrl_t ctrl,
 			       struct nvme_sanitize_nvm_args *args);
 
 /**

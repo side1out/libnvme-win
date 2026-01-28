@@ -14,13 +14,20 @@
 #include <string.h>
 #include <fcntl.h>
 #include <libgen.h>
-#include <unistd.h>
-#include <ifaddrs.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifdef WINDOWS_GCC
+#include <winsock2.h>
+#include <time.h>
+#include "windows/compat.h"
+#include "windows/ioctl.h"
+#else
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <unistd.h>
+#include <ifaddrs.h>
+#endif
 
 #include <ccan/endian/endian.h>
 #include <ccan/list/list.h>
@@ -145,11 +152,12 @@ int nvme_host_get_ids(nvme_root_t r,
 	h = nvme_first_host(r);
 	if (h) {
 		if (!hid)
-			hid = xstrdup(nvme_host_get_hostid(h));
+			hid = strdup(nvme_host_get_hostid(h));
 		if (!hnqn)
-			hnqn = xstrdup(nvme_host_get_hostnqn(h));
+			hnqn = strdup(nvme_host_get_hostnqn(h));
 	}
 
+#ifdef FBS	
 	/* /etc/nvme/hostid and/or /etc/nvme/hostnqn */
 	if (!hid)
 		hid = nvmf_hostid_from_file();
@@ -183,6 +191,7 @@ int nvme_host_get_ids(nvme_root_t r,
 			return -1;
 		}
 	}
+#endif
 
 	/* sanity checks */
 	nqn = nvme_hostid_from_hostnqn(hnqn);
@@ -199,7 +208,6 @@ int nvme_host_get_ids(nvme_root_t r,
 
 	return 0;
 }
-
 nvme_host_t nvme_default_host(nvme_root_t r)
 {
 	_cleanup_free_ char *hostnqn = NULL;
@@ -279,6 +287,12 @@ static void nvme_filter_tree(nvme_root_t r, nvme_scan_filter_t f, void *f_args)
 	}
 }
 
+#ifdef WINDOWS_GCC
+int nvme_scan_topology(struct nvme_root *r, nvme_scan_filter_t f, void *f_args)
+{
+	return nvme_scan_topology_win();
+}
+#else	
 int nvme_scan_topology(struct nvme_root *r, nvme_scan_filter_t f, void *f_args)
 {
 	_cleanup_dirents_ struct dirents subsys = {}, ctrls = {};
@@ -327,7 +341,7 @@ int nvme_scan_topology(struct nvme_root *r, nvme_scan_filter_t f, void *f_args)
 
 	return 0;
 }
-
+#endif
 nvme_root_t nvme_create_root(FILE *fp, int log_level)
 {
 	struct nvme_root *r;
@@ -1435,7 +1449,9 @@ struct nvme_ctrl *nvme_create_ctrl(nvme_root_t r,
 		return NULL;
 	}
 	c->fd = -1;
+#ifdef FBS
 	nvmf_default_config(&c->cfg);
+#endif
 	list_head_init(&c->namespaces);
 	list_head_init(&c->paths);
 	list_node_init(&c->entry);
@@ -1497,7 +1513,6 @@ static bool _tcp_ctrl_match_host_traddr_no_src_addr(struct nvme_ctrl *c, struct 
 
 	return true;
 }
-
 /**
  * _tcp_ctrl_match_host_iface_no_src_addr() - Match host_iface w/o src_addr
  * @c:	An existing controller instance
@@ -1537,7 +1552,6 @@ static bool _tcp_ctrl_match_host_iface_no_src_addr(struct nvme_ctrl *c, struct c
 
 	return true;
 }
-
 /**
  * _tcp_opt_params_match_no_src_addr() - Match optional host_traddr/host_iface w/o src_addr
  * @c:	An existing controller instance
@@ -1716,6 +1730,7 @@ static bool _match_ctrl(struct nvme_ctrl *c, struct candidate_args *candidate)
 
 	return true;
 }
+
 /**
  * _candidate_init() - Init candidate and get the matching function
  *
@@ -1793,6 +1808,7 @@ static void _candidate_free(struct candidate_args *candidate)
 {
 	freeifaddrs(candidate->iface_list); /* This is NULL-safe */
 }
+
 
 #define _cleanup_candidate_ __cleanup__(_candidate_free)
 
@@ -1956,9 +1972,15 @@ static char *nvme_ctrl_lookup_phy_slot(nvme_root_t r, const char *address)
 
 	target_addr = strndup(address, 10);
 	while ((entry = readdir(slots_dir))) {
-		if (entry->d_type == DT_DIR &&
+#ifdef WINDOWS_GCC
+		if (portable_d_type(slots_sysfs_dir, entry) == DT_DIR && 		
 		    strncmp(entry->d_name, ".", 1) != 0 &&
 		    strncmp(entry->d_name, "..", 2) != 0) {
+#else
+		if (entry->d_type == DT_DIR && 
+		    strncmp(entry->d_name, ".", 1) != 0 &&
+		    strncmp(entry->d_name, "..", 2) != 0) {
+#endif
 			_cleanup_free_ char *path = NULL;
 			_cleanup_free_ char *addr = NULL;
 
@@ -2173,7 +2195,11 @@ static nvme_ctrl_t nvme_ctrl_alloc(nvme_root_t r, nvme_subsystem_t s,
 			return NULL;
 		}
 		/* Figure out the PCI address from the attribute path */
+#ifdef WINDOWS_GCC
+		rpath = realpath_win(path, NULL);
+#else
 		rpath = realpath(path, NULL);
+#endif
 		if (!rpath) {
 			errno = ENOMEM;
 			return NULL;
@@ -2245,7 +2271,6 @@ nvme_ctrl_t nvme_scan_ctrl(nvme_root_t r, const char *name)
 	_cleanup_free_ char *subsysnqn = NULL, *subsysname = NULL;
 	_cleanup_free_ char *hostnqn = NULL, *hostid = NULL;
 	_cleanup_free_ char *path = NULL;
-	char *host_key;
 	nvme_host_t h;
 	nvme_subsystem_t s;
 	nvme_ctrl_t c;
@@ -2262,13 +2287,12 @@ nvme_ctrl_t nvme_scan_ctrl(nvme_root_t r, const char *name)
 	hostid = nvme_get_attr(path, "hostid");
 	h = nvme_lookup_host(r, hostnqn, hostid);
 	if (h) {
-		host_key = nvme_get_attr(path, "dhchap_secret");
-		if (host_key && strcmp(host_key, "none")) {
+		free(h->dhchap_key);
+		h->dhchap_key = nvme_get_attr(path, "dhchap_secret");
+		if (h->dhchap_key && !strcmp(h->dhchap_key, "none")) {
 			free(h->dhchap_key);
-			h->dhchap_key = host_key;
-			host_key = NULL;
+			h->dhchap_key = NULL;
 		}
-		free(host_key);
 	}
 	if (!h) {
 		h = nvme_default_host(r);

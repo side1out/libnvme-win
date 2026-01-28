@@ -6,8 +6,11 @@
 #define _LOG_H
 
 #include <stdbool.h>
+#ifdef WINDOWS_GCC
+#include "windows/syslog.h"
+#else
 #include <syslog.h>
-
+#endif
 /* for nvme_root_t */
 #include <nvme/tree.h>
 
@@ -45,7 +48,7 @@ void nvme_init_logging(nvme_root_t r, int lvl, bool log_pid, bool log_tstamp);
  * Sets the default logging settings for the library in case the root object
  * is absent.
  */
-void nvme_init_default_logging(FILE *fp, int lvl, bool log_pid, bool log_tstamp);
+NVME_API void nvme_init_default_logging(FILE *fp, int lvl, bool log_pid, bool log_tstamp);
 
 /**
  * nvme_get_logging_level() - Get current logging level

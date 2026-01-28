@@ -253,6 +253,9 @@ struct nvme_fw_download_args {
 	__u32 timeout;
 	__u32 offset;
 	__u32 data_len;
+	#ifdef WINDOWS_GCC
+	__u32 fw_len; // Windows needs more info sometimes for APIs (i.e STORAGE_HW_FIRMWARE_REQUEST_FLAG_LAST_SEGMENT)
+	#endif
 };
 
 /**

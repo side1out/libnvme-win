@@ -12,7 +12,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#ifndef WINDOWS_GCC
 #include <sys/socket.h>
+#endif
 
 
 #include <ccan/array_size/array_size.h>

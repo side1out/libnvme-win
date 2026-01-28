@@ -18,9 +18,15 @@
 #include <fcntl.h>
 #include <sys/param.h>
 #include <sys/types.h>
+#ifdef WINDOWS_GCC
+#include <winsock2.h>
+#include <time.h>
+#include "windows/compat.h"
+#else
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <unistd.h>
+#endif
 
 #include <ccan/ccan/minmax/minmax.h>
 #include <ccan/endian/endian.h>
@@ -916,7 +922,7 @@ struct nvmf_ext_attr *nvmf_exat_ptr_next(struct nvmf_ext_attr *p)
 		((uintptr_t)p + (ptrdiff_t)nvmf_exat_size(le16_to_cpu(p->exatlen)));
 }
 
-const char *nvme_get_version(enum nvme_version type)
+NVME_API const char *nvme_get_version(enum nvme_version type)
 {
 	switch(type) {
 	case NVME_VERSION_PROJECT:

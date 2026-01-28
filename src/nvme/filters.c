@@ -6,12 +6,17 @@
  * Authors: Keith Busch <keith.busch@wdc.com>
  * 	    Chaitanya Kulkarni <chaitanya.kulkarni@wdc.com>
  */
+
+#ifdef WINDOWS_GCC
+#include "windows/compat.h"
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <dirent.h>
-
 #include "filters.h"
 #include "private.h"
+
 
 int nvme_namespace_filter(const struct dirent *d)
 {
@@ -73,6 +78,11 @@ int nvme_subsys_filter(const struct dirent *d)
 
 	return 0;
 }
+
+// no idea why I had to place this down here for compat to work
+#ifdef WINDOWS_GCC
+#include "windows/compat.h"
+#endif
 
 int nvme_scan_subsystems(struct dirent ***subsys)
 {

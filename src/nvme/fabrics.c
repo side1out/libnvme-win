@@ -16,16 +16,21 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
-#include <dirent.h>
 #include <inttypes.h>
 
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#ifdef WINDOWS_GCC
+#include <winsock2.h>
+#include <time.h>
+#else
+#include <unistd.h>
+#include <dirent.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <net/if.h>
+#endif
 
 #include <ccan/endian/endian.h>
 #include <ccan/list/list.h>

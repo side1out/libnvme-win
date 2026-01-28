@@ -9,7 +9,11 @@
 #ifndef _LIBNVME_FILTERS_H
 #define _LIBNVME_FILTERS_H
 
+#ifdef WINDOWS_GCC
+#include <winsock2.h>
+#else
 #include <dirent.h>
+#endif
 
 #include <nvme/tree.h>
 
@@ -25,7 +29,7 @@
  *
  * Return: 1 if @d matches, 0 otherwise
  */
-int nvme_namespace_filter(const struct dirent *d);
+NVME_API int nvme_namespace_filter(const struct dirent *d);
 
 /**
  * nvme_paths_filter() - Filter for paths

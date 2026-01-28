@@ -15,12 +15,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <inttypes.h>
 
+#ifdef WINDOWS_GCC
+#include "windows/ioctl.h"
+#else
 #include <sys/ioctl.h>
-#include <sys/stat.h>
+#include <unistd.h>
 #include <sys/time.h>
+#endif
+#include <sys/stat.h>
 
 #include <ccan/build_assert/build_assert.h>
 #include <ccan/ccan/minmax/minmax.h>
@@ -44,7 +48,6 @@ static int nvme_verify_chr(int fd)
 	}
 	return 0;
 }
-
 int nvme_subsystem_reset(int fd)
 {
 	int ret;
@@ -98,13 +101,15 @@ __attribute__((weak))
 int nvme_submit_passthru(int fd, unsigned long ioctl_cmd,
 			 struct nvme_passthru_cmd *cmd, __u32 *result)
 {
+#ifdef WINDOWS_GCC
 	int err = ioctl(fd, ioctl_cmd, cmd);
-
+#else	
+	int err = ioctl(fd, ioctl_cmd, cmd);
+#endif
 	if (err >= 0 && result)
 		*result = cmd->result;
 	return err;
 }
-
 static int nvme_passthru64(int fd, unsigned long ioctl_cmd, __u8 opcode,
 			   __u8 flags, __u16 rsvd, __u32 nsid, __u32 cdw2,
 			   __u32 cdw3, __u32 cdw10, __u32 cdw11, __u32 cdw12,
@@ -277,6 +282,7 @@ int nvme_identify(struct nvme_identify_args *args)
 	};
 
 	if (args->args_size < sizeof(*args)) {
+		printf("args_size %u < %zu\n", args->args_size, sizeof(*args));
 		errno = EINVAL;
 		return -1;
 	}
@@ -664,6 +670,8 @@ int nvme_get_ana_log_atomic(int fd, bool rgo, bool rae, unsigned int retries,
 
 int nvme_set_features(struct nvme_set_features_args *args)
 {
+
+	printf("nvme_set_features called\n");
 	__u32 cdw10 = NVME_SET(args->fid, FEATURES_CDW10_FID) |
 			NVME_SET(!!args->save, SET_FEATURES_CDW10_SAVE);
 	__u32 cdw14 = NVME_SET(args->uuidx, FEATURES_CDW14_UUID);
@@ -682,9 +690,11 @@ int nvme_set_features(struct nvme_set_features_args *args)
 		.timeout_ms	= args->timeout,
 	};
 	if (args->args_size < sizeof(*args)) {
+		printf("args_size %u < %zu\n", args->args_size, sizeof(*args));
 		errno = EINVAL;
 		return -1;
 	}
+	printf("nvme_set_features calling passthrough\n");
 	return nvme_submit_admin_passthru(args->fd, &cmd, args->result);
 }
 
@@ -1596,6 +1606,9 @@ int nvme_fw_download(struct nvme_fw_download_args *args)
 		.data_len	= args->data_len,
 		.addr		= (__u64)(uintptr_t)args->data,
 		.timeout_ms	= args->timeout,
+		#ifdef WINDOWS_GCC
+		.fw_len     = args->fw_len,
+		#endif
 	};
 
 	if (args->args_size < sizeof(*args)) {

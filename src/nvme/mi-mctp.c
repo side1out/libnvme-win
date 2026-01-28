@@ -12,11 +12,17 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include <poll.h>
 #include <fcntl.h>
+#ifdef WINDOWS_GCC
+#include "winsock2.h"
+#include "windows.h"
+#else
 #include <sys/socket.h>
-#include <sys/types.h>
+#include <poll.h>
 #include <sys/uio.h>
+#endif
+
+#include <sys/types.h>
 
 #if HAVE_LINUX_MCTP_H
 #include <linux/mctp.h>
@@ -648,7 +654,6 @@ static const struct nvme_mi_transport nvme_mi_transport_mctp = {
 	.aem_fd = nvme_mi_mctp_aem_fd,
 	.aem_purge = nvme_mi_mctp_aem_purge,
 };
-
 int nvme_mi_aem_open(nvme_mi_ep_t ep)
 {
 	struct nvme_mi_transport_mctp *mctp;
@@ -671,8 +676,7 @@ int nvme_mi_aem_open(nvme_mi_ep_t ep)
 
 	return 0;
 }
-
-nvme_mi_ep_t nvme_mi_open_mctp(nvme_root_t root, unsigned int netid, __u8 eid)
+NVME_API nvme_mi_ep_t nvme_mi_open_mctp(nvme_root_t root, unsigned int netid, __u8 eid)
 {
 	struct nvme_mi_transport_mctp *mctp;
 	struct nvme_mi_ep *ep;

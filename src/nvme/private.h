@@ -10,11 +10,13 @@
 #define _LIBNVME_PRIVATE_H
 
 #include <ccan/list/list.h>
+#ifndef WINDOWS_GCC
 #include <poll.h>
 #include <sys/socket.h>
-
+#endif
 #include <nvme/fabrics.h>
 #include <nvme/mi.h>
+
 
 const char *nvme_subsys_sysfs_dir(void);
 const char *nvme_ctrl_sysfs_dir(void);
@@ -315,6 +317,7 @@ void nvme_mi_ep_probe(struct nvme_mi_ep *ep);
 /* for tests, we need to calculate the correct MICs */
 __u32 nvme_mi_crc32_update(__u32 crc, void *data, size_t len);
 
+#ifdef MCTP
 /* we have a facility to mock MCTP socket operations in the mi-mctp transport,
  * using this ops type. This should only be used for test, and isn't exposed
  * in the shared lib */;
@@ -328,6 +331,7 @@ struct __mi_mctp_socket_ops {
 	int (*ioctl_tag)(int, unsigned long, struct mctp_ioc_tag_ctl *);
 };
 void __nvme_mi_mctp_set_ops(const struct __mi_mctp_socket_ops *newops);
+#endif
 
 #define SECTOR_SIZE	512
 #define SECTOR_SHIFT	9

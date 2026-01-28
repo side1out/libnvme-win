@@ -37,7 +37,7 @@ int ioctl(int fd, unsigned long req, ...) {
     void * cmd = va_arg(args, void *);
     va_end(args);
 
-    printf("libnvme-win v1.9\n");
+    printf("libnvme-win v2.4\n");
     int err = win_ioctl((HANDLE)fd, ioctl_cmd, cmd);
     if (err != 0) {
         printf("win_ioctl failed with error: %d\n", err);
@@ -161,8 +161,44 @@ int nvme_submit_admin_passthru_win_set_feature(HANDLE fd, struct nvme_passthru_c
     return 0;
 }
 
+void print_windows_nvme_restrictions(void)
+{
+    fprintf(stderr, "\n");
+    fprintf(stderr, "╔════════════════════════════════════════════════════════════════════════════╗\n");
+    fprintf(stderr, "║              Windows NVMe Passthrough Restrictions                         ║\n");
+    fprintf(stderr, "╠════════════════════════════════════════════════════════════════════════════╣\n");
+    fprintf(stderr, "║ Windows implements stricter controls on NVMe device access compared to    ║\n");
+    fprintf(stderr, "║ Linux. The library attempts all operations to match Linux behavior, but   ║\n");
+    fprintf(stderr, "║ many admin commands are blocked by Windows for system stability.          ║\n");
+    fprintf(stderr, "╠════════════════════════════════════════════════════════════════════════════╣\n");
+    fprintf(stderr, "║ ✓ TYPICALLY SUPPORTED (Read-Only Operations):                             ║\n");
+    fprintf(stderr, "║   • Identify Controller/Namespace                                         ║\n");
+    fprintf(stderr, "║   • Get Features                                                          ║\n");
+    fprintf(stderr, "║   • Get Log Page (most types)                                             ║\n");
+    fprintf(stderr, "║   • List Namespaces                                                       ║\n");
+    fprintf(stderr, "║   • SMART / Health Information                                            ║\n");
+    fprintf(stderr, "║   • Device Self-Test Status                                               ║\n");
+    fprintf(stderr, "║   • Firmware Download/Activate (via Windows Storage API, not passthrough) ║\n");
+    fprintf(stderr, "╠════════════════════════════════════════════════════════════════════════════╣\n");
+    fprintf(stderr, "║ ✗ TYPICALLY BLOCKED (Write/Management Operations):                        ║\n");
+    fprintf(stderr, "║   • Create/Delete Namespace         (Error 1: Incorrect function)         ║\n");
+    fprintf(stderr, "║   • Attach/Detach Namespace         (Error 1: Incorrect function)         ║\n");
+    fprintf(stderr, "║   • Format NVM                      (Error 1: Incorrect function)         ║\n");
+    fprintf(stderr, "║   • Set Features                    (Error 1: Incorrect function)         ║\n");
+    fprintf(stderr, "║   • Sanitize                        (Error 1: Incorrect function)         ║\n");
+    fprintf(stderr, "║   • NVMe-oF / Fabrics Commands      (Not implemented on Windows)          ║\n");
+    fprintf(stderr, "║   • Virtualization Management       (Error 1: Incorrect function)         ║\n");
+    fprintf(stderr, "║   • Security Send/Receive           (Error 1: Incorrect function)         ║\n");
+    fprintf(stderr, "╠════════════════════════════════════════════════════════════════════════════╣\n");
+    fprintf(stderr, "║ NOTE: Error 1 (Incorrect function) is the most common response when       ║\n");
+    fprintf(stderr, "║ Windows blocks a passthrough operation. This is EXPECTED behavior.        ║\n");
+    fprintf(stderr, "╚════════════════════════════════════════════════════════════════════════════╝\n");
+    fprintf(stderr, "\n");
+}
+
 void print_last_error(const char *context)
 {
+    static int restrictions_shown = 0;
     DWORD errorMessageID = GetLastError();
     if (errorMessageID == 0)
         return;  // No error
@@ -184,15 +220,22 @@ void print_last_error(const char *context)
     if (size && messageBuffer)
     {
         if (context)
-            fprintf(stderr, "%s: (%lu) %s\n", context, errorMessageID, messageBuffer);
+            fprintf(stderr, "%s: (%lu) %s", context, errorMessageID, messageBuffer);
         else
-            fprintf(stderr, "Windows Error (%lu): %s\n", errorMessageID, messageBuffer);
+            fprintf(stderr, "Windows Error (%lu): %s", errorMessageID, messageBuffer);
     }
     else
     {
         fprintf(stderr, "Windows Error (%lu)\n", errorMessageID);
     }
     LocalFree(messageBuffer);
+
+    // Show detailed restrictions info on first error 1 (most common Windows blocking error)
+    if (!restrictions_shown && errorMessageID == 1)
+    {
+        print_windows_nvme_restrictions();
+        restrictions_shown = 1;
+    }
 }
 void print_win_error(const char *ctx)
 {
@@ -208,28 +251,55 @@ void print_win_error(const char *ctx)
     fprintf(stderr, "%s failed: (%lu) %s\n", ctx, e, msg ? msg : "");
     LocalFree(msg);
 }
+/*
+ * Determine whether to use StorageAdapterProtocolSpecificProperty or 
+ * StorageDeviceProtocolSpecificProperty based on NVMe Identify CNS value.
+ *
+ * Windows requires:
+ * - StorageAdapterProtocolSpecificProperty for controller-level queries
+ * - StorageDeviceProtocolSpecificProperty for namespace-level queries
+ */
 int GetIdentifyDeviceOrAdapter(int value)
 {
+    STORAGE_PROPERTY_ID propId;
+    
     switch (value) {
-        case NVME_IDENTIFY_CNS_CTRL:                    // 1
-        case NVME_IDENTIFY_CNS_NVMSET_LIST:             // 4
-        case NVME_IDENTIFY_CNS_CSI_CTRL:                // 6
-        case NVME_IDENTIFY_CNS_NS_USER_DATA_FORMAT:     // 9
-        case NVME_IDENTIFY_CNS_CSI_NS_USER_DATA_FORMAT: // 0x0A
-        case NVME_IDENTIFY_CNS_CTRL_LIST:               // 0x13
-        case NVME_IDENTIFY_CNS_PRIMARY_CTRL_CAP:		// 0x14
-	    case NVME_IDENTIFY_CNS_SECONDARY_CTRL_LIST:		// 0x15
-	    case NVME_IDENTIFY_CNS_NS_GRANULARITY:			// 0x16
-	    case NVME_IDENTIFY_CNS_UUID_LIST:				// 0x17
-	    case NVME_IDENTIFY_CNS_DOMAIN_LIST:				// 0x18
-	    case NVME_IDENTIFY_CNS_ENDURANCE_GROUP_ID:      // 0x19
-        case NVME_IDENTIFY_CNS_COMMAND_SET_STRUCTURE:   // 0x1C
-        case NVME_IDENTIFY_CNS_PORTS_LIST:              // 0x1E
-        case NVME_IDENTIFY_CNS_SUPPORTED_CTRL_STATE_FORMATS: // 0x20
-            return (STORAGE_PROPERTY_ID)StorageAdapterProtocolSpecificProperty;
+        // Namespace-level identify commands - use Device property
+        case NVME_IDENTIFY_CNS_NS:                      // 0x00 - Identify Namespace (needs valid NSID)
+        case NVME_IDENTIFY_CNS_ALLOCATED_NS:            // 0x02 - Allocated Namespace
+        case NVME_IDENTIFY_CNS_NS_CTRL_LIST:            // 0x03 - Controller List attached to NSID
+        case NVME_IDENTIFY_CNS_NS_DESC_LIST:            // 0x08 - Namespace Identification Descriptor
+            propId = StorageDeviceProtocolSpecificProperty;
+            break;
+            
+        // Controller-level identify commands - use Adapter property
+        case NVME_IDENTIFY_CNS_CTRL:                    // 0x01 - Identify Controller
+        case NVME_IDENTIFY_CNS_NS_ACTIVE_LIST:          // 0x02 - Active Namespace list
+        case NVME_IDENTIFY_CNS_NVMSET_LIST:             // 0x04 - NVM Set List
+        case NVME_IDENTIFY_CNS_CSI_CTRL:                // 0x06 - I/O Command Set specific Controller
+        case NVME_IDENTIFY_CNS_CSI_NS:                  // 0x07 - I/O Command Set specific Namespace
+        case NVME_IDENTIFY_CNS_ALLOCATED_NS_LIST:       // 0x10 - Allocated Namespace ID list
+        case NVME_IDENTIFY_CNS_CTRL_LIST:               // 0x13 - Controller List
+        case NVME_IDENTIFY_CNS_PRIMARY_CTRL_CAP:        // 0x14 - Primary Controller Capabilities
+        case NVME_IDENTIFY_CNS_SECONDARY_CTRL_LIST:     // 0x15 - Secondary Controller List
+        case NVME_IDENTIFY_CNS_NS_GRANULARITY:          // 0x16 - Namespace Granularity List
+        case NVME_IDENTIFY_CNS_UUID_LIST:               // 0x17 - UUID List
+        case NVME_IDENTIFY_CNS_DOMAIN_LIST:             // 0x18 - Domain List
+        case NVME_IDENTIFY_CNS_ENDURANCE_GROUP_ID:      // 0x19 - Endurance Group ID
+        case NVME_IDENTIFY_CNS_COMMAND_SET_STRUCTURE:   // 0x1C - I/O Command Set Structure
+        case NVME_IDENTIFY_CNS_PORTS_LIST:              // 0x1E - NVMe over Fabrics Discovery
+        case NVME_IDENTIFY_CNS_SUPPORTED_CTRL_STATE_FORMATS: // 0x20 - Controller State Formats
+            propId = StorageAdapterProtocolSpecificProperty;
+            break;
+            
         default:
-            return (STORAGE_PROPERTY_ID)StorageDeviceProtocolSpecificProperty;
+            // Unknown CNS - default to Device property for safety
+            printf("GetIdentifyDeviceOrAdapter: Unknown CNS value 0x%02x, using DeviceProperty\n", value);
+            propId = StorageDeviceProtocolSpecificProperty;
+            break;
     }
+    
+    return propId;
 }
 int GetNVMEIdentify(HANDLE fd, int cns, unsigned char* buffer, ULONG len)
 {
@@ -407,8 +477,12 @@ int NVMEPassthrough(HANDLE fd, unsigned char* buffer, int bufferLength, int data
     else {
         int err = GetLastError();
         print_last_error("NVMEPassthrough DeviceIoControl failed");
+        print_windows_nvme_restrictions();
+        free(winbuffer);
         return err;
     }
+    free(winbuffer);
+    return 0;
 }
 
 int SetNvmeHostControlledThermal(HANDLE hDevice)

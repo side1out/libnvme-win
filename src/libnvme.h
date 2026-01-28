@@ -7,13 +7,25 @@
  * 	    Chaitanya Kulkarni <chaitanya.kulkarni@wdc.com>
  */
 
-#ifndef _LIBNVME_H
-#define _LIBNVME_H
+ #ifndef _LIBNVME_H
+ #define _LIBNVME_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#ifdef WINDOWS_GCC
+#include "nvme/windows/types.h"
+#include "nvme/types.h"
+#include <nvme/linux.h>
+#include <nvme/ioctl.h>
+//#include <nvme/nbft.h>
+//#include <nvme/fabrics.h>
+#include <nvme/filters.h>
+#include "nvme/tree.h"
+#include "nvme/util.h"
+#include "nvme/log.h"
+#else
 #include <nvme/types.h>
 #include <nvme/linux.h>
 #include <nvme/ioctl.h>
@@ -23,6 +35,7 @@ extern "C" {
 #include <nvme/tree.h>
 #include <nvme/util.h>
 #include <nvme/log.h>
+#endif
 
 #ifdef __cplusplus
 }

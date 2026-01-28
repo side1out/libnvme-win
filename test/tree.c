@@ -8,7 +8,12 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#ifdef WINDOWS_GCC
+#include <winsock2.h>
+#include <time.h>
+#else
 #include <arpa/inet.h>
+#endif
 
 #include <ccan/array_size/array_size.h>
 

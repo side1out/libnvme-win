@@ -1,5 +1,19 @@
 # libnvme
 
+## Windows Fork
+
+**Maintainer:** James Huey <side1out@yahoo.com>  
+**Repository:** https://github.com/side1out/libnvme-win (planned)  
+**Based on:** libnvme v1.15 (upstream: https://github.com/linux-nvme/libnvme)  
+**License:** LGPL-2.1-or-later
+
+This is a Windows port of the official Linux libnvme library, providing NVMe device access through native Windows Storage APIs.
+
+**Purpose:** This library enables Windows-based applications to interact with NVMe devices using familiar libnvme APIs. While Windows NVMe access capabilities are more restricted than Linux, this port provides valuable functionality for device identification, health monitoring, and firmware management operations that are supported by the Windows Storage API.
+
+---
+
+
 ![MesonBuild](https://github.com/linux-nvme/libnvme/actions/workflows/build.yml/badge.svg)
 ![PyBuild](https://github.com/linux-nvme/libnvme/actions/workflows/release-python.yml/badge.svg)
 [![PyPI](https://img.shields.io/pypi/v/libnvme)](https://pypi.org/project/libnvme/)

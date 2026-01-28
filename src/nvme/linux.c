@@ -41,6 +41,10 @@
 #include "base64.h"
 #include "crc32.h"
 
+#ifdef WINDOWS_GCC
+#include "windows/compat.h"
+#endif
+
 static int __nvme_open(const char *name)
 {
 	_cleanup_free_ char *path = NULL;

@@ -13,7 +13,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#ifdef WINDOWS_GCC
+#include "windows/types.h"
+#else
 #include <linux/types.h>
+#endif
 
 /**
  * DOC: types.h
@@ -8620,6 +8624,8 @@ enum nvme_admin_opcode {
  *							identifying the supported NVMe Controller
  *							State data structures
  */
+
+ 
 enum nvme_identify_cns {
 	NVME_IDENTIFY_CNS_NS					= 0x00,
 	NVME_IDENTIFY_CNS_CTRL					= 0x01,
@@ -8639,8 +8645,13 @@ enum nvme_identify_cns {
 	NVME_IDENTIFY_CNS_PRIMARY_CTRL_CAP			= 0x14,
 	NVME_IDENTIFY_CNS_SECONDARY_CTRL_LIST			= 0x15,
 	NVME_IDENTIFY_CNS_NS_GRANULARITY			= 0x16,
+	#ifdef WINDOWS_GCC
+	NVME_IDENTIFY_CNS_UUID_LIST_WIN				= 0x17,
+	NVME_IDENTIFY_CNS_DOMAIN_LIST_WIN				= 0x18,
+	#else
 	NVME_IDENTIFY_CNS_UUID_LIST				= 0x17,
 	NVME_IDENTIFY_CNS_DOMAIN_LIST				= 0x18,
+	#endif
 	NVME_IDENTIFY_CNS_ENDURANCE_GROUP_ID			= 0x19,
 	NVME_IDENTIFY_CNS_CSI_ALLOCATED_NS_LIST			= 0x1A,
 	NVME_IDENTIFY_CNS_CSI_ID_NS_DATA_STRUCTURE		= 0x1B,

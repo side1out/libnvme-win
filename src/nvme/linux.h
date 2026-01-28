@@ -43,7 +43,7 @@ int nvme_fw_download_seq(int fd, __u32 size, __u32 xfer, __u32 offset,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_set_etdas(int fd, bool *changed);
+NVME_API int nvme_set_etdas(int fd, bool *changed);
 
 /**
  * nvme_clear_etdas() - Clear the Extended Telemetry Data Area 4 Supported bit
@@ -54,7 +54,7 @@ int nvme_set_etdas(int fd, bool *changed);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_clear_etdas(int fd, bool *changed);
+NVME_API int nvme_clear_etdas(int fd, bool *changed);
 
 /**
  * nvme_get_uuid_list - Returns the uuid list (if supported)
@@ -64,7 +64,7 @@ int nvme_clear_etdas(int fd, bool *changed);
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_uuid_list(int fd,
+NVME_API int nvme_get_uuid_list(int fd,
 		struct nvme_id_uuid_list *uuid_list);
 
 /**
@@ -76,7 +76,7 @@ int nvme_get_uuid_list(int fd,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_telemetry_max(int fd, enum nvme_telemetry_da *da, size_t *max_data_tx);
+NVME_API int nvme_get_telemetry_max(int fd, enum nvme_telemetry_da *da, size_t *max_data_tx);
 
 /**
  * nvme_get_telemetry_log() - Get specified telemetry log
@@ -95,7 +95,7 @@ int nvme_get_telemetry_max(int fd, enum nvme_telemetry_da *da, size_t *max_data_
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_telemetry_log(int fd, bool create, bool ctrl, bool rae, size_t max_data_tx,
+NVME_API int nvme_get_telemetry_log(int fd, bool create, bool ctrl, bool rae, size_t max_data_tx,
 			   enum nvme_telemetry_da da, struct nvme_telemetry_log **log,
 			   size_t *size);
 /**
@@ -112,7 +112,7 @@ int nvme_get_telemetry_log(int fd, bool create, bool ctrl, bool rae, size_t max_
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_ctrl_telemetry(int fd, bool rae, struct nvme_telemetry_log **log,
+NVME_API int nvme_get_ctrl_telemetry(int fd, bool rae, struct nvme_telemetry_log **log,
 		enum nvme_telemetry_da da, size_t *size);
 
 /**
@@ -128,7 +128,7 @@ int nvme_get_ctrl_telemetry(int fd, bool rae, struct nvme_telemetry_log **log,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_host_telemetry(int fd,  struct nvme_telemetry_log **log,
+NVME_API int nvme_get_host_telemetry(int fd,  struct nvme_telemetry_log **log,
 		enum nvme_telemetry_da da, size_t *size);
 
 /**
@@ -144,7 +144,7 @@ int nvme_get_host_telemetry(int fd,  struct nvme_telemetry_log **log,
  * Return: The nvme command status if a response was received (see
  * &enum nvme_status_field) or -1 with errno set otherwise.
  */
-int nvme_get_new_host_telemetry(int fd,  struct nvme_telemetry_log **log,
+NVME_API int nvme_get_new_host_telemetry(int fd,  struct nvme_telemetry_log **log,
 		enum nvme_telemetry_da da, size_t *size);
 
 /**
@@ -154,7 +154,7 @@ int nvme_get_new_host_telemetry(int fd,  struct nvme_telemetry_log **log,
  *
  * Return: A byte limit on the size of the controller's ANA log page
  */
-size_t nvme_get_ana_log_len_from_id_ctrl(const struct nvme_id_ctrl *id_ctrl,
+NVME_API size_t nvme_get_ana_log_len_from_id_ctrl(const struct nvme_id_ctrl *id_ctrl,
 					 bool rgo);
 
 /**

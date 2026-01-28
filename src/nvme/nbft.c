@@ -11,7 +11,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef WINDOWS_GCC
+#include <winsock2.h>
+#include <time.h>
+#else
 #include <arpa/inet.h>
+#endif
 #include <ccan/endian/endian.h>
 
 #include "private.h"

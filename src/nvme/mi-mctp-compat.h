@@ -3,7 +3,13 @@
 #ifndef _MI_MCTP_COMPAT_H
 #define _MI_MCTP_COMPAT_H
 
+#ifdef WINDOWS_GCC
+#include "winsock2.h"
+#include "windows.h"
+#include "windows/types.h"
+#else
 #include <linux/types.h>
+#endif
 
 /* As of kernel v5.15, these AF_MCTP-related definitions are provided by
  * linux/mctp.h. However, we provide a set here while that header percolates

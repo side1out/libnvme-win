@@ -4,14 +4,19 @@
  * Copyright (c) 2023 Martin Belanger, Dell Technologies Inc.
  */
 #include <sys/types.h>
-#include <ifaddrs.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#ifdef WINDOWS_GCC
+#include <winsock2.h>
+#include <time.h>
+#else
+#include <ifaddrs.h>
+#include <arpa/inet.h>
 #include <netinet/in.h>
 #include <net/if.h>
-#include <arpa/inet.h>
+#endif
 
 struct ifaddrs_storage {
 	struct ifaddrs ifa;

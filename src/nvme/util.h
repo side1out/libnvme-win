@@ -9,7 +9,11 @@
 #ifndef _LIBNVME_UTIL_H
 #define _LIBNVME_UTIL_H
 
+#include "libnvmeapi.h"
+
+#ifndef WINDOWS_GCC
 #include <ifaddrs.h>
+#endif
 
 #include <nvme/types.h>
 
@@ -85,7 +89,7 @@ __u8 nvme_status_to_errno(int status, bool fabrics);
  * Return: String representation of the nvme status if it is an nvme status field,
  * or a standard errno string if status is < 0.
  */
-const char *nvme_status_to_string(int status, bool fabrics);
+NVME_API const char *nvme_status_to_string(int status, bool fabrics);
 
 /**
  * nvme_errno_to_string() - Returns string describing nvme connect failures
@@ -93,7 +97,7 @@ const char *nvme_status_to_string(int status, bool fabrics);
  *
  * Return: String representation of the nvme connect error codes
  */
-const char *nvme_errno_to_string(int err);
+NVME_API const char *nvme_errno_to_string(int err);
 
 /**
  * nvme_init_ctrl_list() - Initialize an nvme_ctrl_list structure from an array.
@@ -104,7 +108,7 @@ const char *nvme_errno_to_string(int err);
  * This is intended to be used with any command that takes a controller list
  * argument. See nvme_ns_attach_ctrls() and nvme_ns_detach().
  */
-void nvme_init_ctrl_list(struct nvme_ctrl_list *cntlist, __u16 num_ctrls,
+NVME_API void nvme_init_ctrl_list(struct nvme_ctrl_list *cntlist, __u16 num_ctrls,
 			 __u16 *ctrlist);
 
 /**
@@ -121,7 +125,7 @@ void nvme_init_ctrl_list(struct nvme_ctrl_list *cntlist, __u16 num_ctrls,
  * Return: The nvme command status if a response was received or -errno
  * otherwise.
  */
-void nvme_init_dsm_range(struct nvme_dsm_range *dsm, __u32 *ctx_attrs,
+NVME_API void nvme_init_dsm_range(struct nvme_dsm_range *dsm, __u32 *ctx_attrs,
 			  __u32 *llbas, __u64 *slbas, __u16 nr_ranges);
 
 /**
@@ -134,7 +138,7 @@ void nvme_init_dsm_range(struct nvme_dsm_range *dsm, __u32 *ctx_attrs,
  * @elbats:	Expected logical block application tag
  * @nr:		Number of descriptors to construct
  */
-void nvme_init_copy_range(struct nvme_copy_range *copy, __u16 *nlbs,
+NVME_API void nvme_init_copy_range(struct nvme_copy_range *copy, __u16 *nlbs,
 			  __u64 *slbas, __u32 *eilbrts, __u32 *elbatms,
 			  __u32 *elbats, __u16 nr);
 
@@ -148,7 +152,7 @@ void nvme_init_copy_range(struct nvme_copy_range *copy, __u16 *nlbs,
  * @elbats:	Expected logical block application tag
  * @nr:		Number of descriptors to construct
  */
-void nvme_init_copy_range_f1(struct nvme_copy_range_f1 *copy, __u16 *nlbs,
+NVME_API void nvme_init_copy_range_f1(struct nvme_copy_range_f1 *copy, __u16 *nlbs,
 			     __u64 *slbas, __u64 *eilbrts, __u32 *elbatms,
 			     __u32 *elbats, __u16 nr);
 
@@ -164,7 +168,7 @@ void nvme_init_copy_range_f1(struct nvme_copy_range_f1 *copy, __u16 *nlbs,
  * @elbats:	Expected logical block application tag
  * @nr:		Number of descriptors to construct
  */
-void nvme_init_copy_range_f2(struct nvme_copy_range_f2 *copy, __u32 *snsids,
+NVME_API void nvme_init_copy_range_f2(struct nvme_copy_range_f2 *copy, __u32 *snsids,
 			     __u16 *nlbs, __u64 *slbas, __u16 *sopts,
 			     __u32 *eilbrts, __u32 *elbatms, __u32 *elbats,
 			     __u16 nr);
@@ -181,7 +185,7 @@ void nvme_init_copy_range_f2(struct nvme_copy_range_f2 *copy, __u32 *snsids,
  * @elbats:	Expected logical block application tag
  * @nr:		Number of descriptors to construct
  */
-void nvme_init_copy_range_f3(struct nvme_copy_range_f3 *copy, __u32 *snsids,
+NVME_API void nvme_init_copy_range_f3(struct nvme_copy_range_f3 *copy, __u32 *snsids,
 			     __u16 *nlbs, __u64 *slbas, __u16 *sopts,
 			     __u64 *eilbrts, __u32 *elbatms, __u32 *elbats,
 			     __u16 nr);
@@ -197,7 +201,7 @@ void nvme_init_copy_range_f3(struct nvme_copy_range_f3 *copy, __u32 *snsids,
  * Return: 0 on success, -1 with errno set to EINVAL if the function did not
  * recognize &fid.
  */
-int nvme_get_feature_length(int fid, __u32 cdw11, __u32 *len);
+NVME_API int nvme_get_feature_length(int fid, __u32 cdw11, __u32 *len);
 
 /**
  * nvme_get_feature_length2() - Retreive the command payload length for a
@@ -213,7 +217,7 @@ int nvme_get_feature_length(int fid, __u32 cdw11, __u32 *len);
  * Return: 0 on success, -1 with errno set to EINVAL if the function did not
  * recognize &fid.
  */
-int nvme_get_feature_length2(int fid, __u32 cdw11, enum nvme_data_tfr dir,
+NVME_API int nvme_get_feature_length2(int fid, __u32 cdw11, enum nvme_data_tfr dir,
 			     __u32 *len);
 
 /**
@@ -668,7 +672,7 @@ const char *nvme_get_version(enum nvme_version type);
  *
  * Return: Returns error code if type conversion fails.
  */
-int nvme_uuid_to_string(unsigned char uuid[NVME_UUID_LEN], char *str);
+NVME_API int nvme_uuid_to_string(unsigned char uuid[NVME_UUID_LEN], char *str);
 
 /**
  * nvme_uuid_from_string - Return encoded UUID represenation of string UUID
@@ -677,7 +681,7 @@ int nvme_uuid_to_string(unsigned char uuid[NVME_UUID_LEN], char *str);
  *
  * Return: Returns error code if type conversion fails.
  */
-int nvme_uuid_from_string(const char *str, unsigned char uuid[NVME_UUID_LEN]);
+NVME_API int nvme_uuid_from_string(const char *str, unsigned char uuid[NVME_UUID_LEN]);
 
 /**
  * nvme_uuid_random - Generate random UUID
@@ -697,7 +701,7 @@ int nvme_uuid_random(unsigned char uuid[NVME_UUID_LEN]);
  *
  * Return: The array position where given UUID is present, or -1 on failure with errno set.
  */
-int nvme_uuid_find(struct nvme_id_uuid_list *uuid_list, const unsigned char uuid[NVME_UUID_LEN]);
+NVME_API int nvme_uuid_find(struct nvme_id_uuid_list *uuid_list, const unsigned char uuid[NVME_UUID_LEN]);
 
 /**
  * nvme_ipaddrs_eq - Check if 2 IP addresses are equal.

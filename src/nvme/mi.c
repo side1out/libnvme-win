@@ -2376,7 +2376,7 @@ static void reset_list_info(struct nvme_mi_aem_ctx *ctx)
 	ctx->list_current = NULL;
 	ctx->occ_header = NULL;
 }
-
+#ifdef MCTP
 static int aem_sync(nvme_mi_ep_t ep,
 	bool envfa,
 	bool empfa,
@@ -2468,7 +2468,6 @@ static int aem_disable_enabled(nvme_mi_ep_t ep)
 
 	return rc;
 }
-
 int nvme_mi_aem_enable(nvme_mi_ep_t ep,
 	struct nvme_mi_aem_config *config,
 	void *userdata)
@@ -2596,7 +2595,6 @@ int nvme_mi_aem_disable(nvme_mi_ep_t ep)
 
 	return rc;
 }
-
 /*When inside a aem_handler, call with the aem_ctx and struct will be populated with next
  *event information.  Will return NULL when end of parsing (or error) is occurred.
  *spec_info and vend_spec_info must be copied to persist as they will not be valid after
@@ -2711,5 +2709,5 @@ cleanup:
 	reset_list_info(ep->aem_ctx);
 	return rc;
 }
-
+#endif
 

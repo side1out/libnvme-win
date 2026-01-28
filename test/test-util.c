@@ -17,7 +17,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#ifndef WINDOWS_GCC
 #include <netdb.h>
+#endif
 #include <string.h>
 
 #include "nvme/log.c"		/* to resolve __nvme_msg() */

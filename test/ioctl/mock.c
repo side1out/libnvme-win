@@ -4,7 +4,11 @@
 #include <inttypes.h>
 #include <stdarg.h>
 #include <string.h>
+#ifdef WINDOWS_GCC
+#include "windows/ioctl.h"
+#else
 #include <sys/ioctl.h>
+#endif
 #include <dlfcn.h>
 
 #include <nvme/ioctl.h>
